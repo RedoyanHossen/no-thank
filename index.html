@@ -109,31 +109,23 @@
       liveCode.innerText = shortCode;
     }
 
-    Html5Qrcode.getCameras().then(cameras => {
-      if (cameras.length > 0) {
-        html5QrCode = new Html5Qrcode("reader");
-        html5QrCode.start(
-          cameras[0].id,
-          { fps: 10, qrbox: 250 },
-          decodedText => {
-            if (decodedText !== lastCode) {
-              lastCode = decodedText;
-              showLiveCode(decodedText);
-              html5QrCode.stop();
-              displayResult(decodedText);
-            }
-          },
-          error => {
-            // show partial typing live
-            if (error && typeof error === "string") {
-              showLiveCode(error);
-            }
-          }
-        );
-      } else {
-        document.getElementById("result").innerText = "ক্যামেরা পাওয়া যায়নি";
+    html5QrCode = new Html5Qrcode("reader");
+
+    html5QrCode.start(
+      { facingMode: "user" }, // শুধুমাত্র ফ্রন্ট ক্যামেরা
+      { fps: 10, qrbox: 250 },
+      decodedText => {
+        if (decodedText !== lastCode) {
+          lastCode = decodedText;
+          showLiveCode(decodedText);
+          html5QrCode.stop();
+          displayResult(decodedText);
+        }
+      },
+      error => {
+        // কিছু না করলেও চলবে
       }
-    });
+    );
   </script>
 
 </body>
