@@ -1,144 +1,204 @@
 <!DOCTYPE html>
 <html lang="bn">
 <head>
-  <meta charset="UTF-8">
-  <title>No Thanks Scanner</title>
-  <script src="https://unpkg.com/html5-qrcode"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Anek+Bangla:wght@500&display=swap" rel="stylesheet">
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: 'Anek Bangla', sans-serif;
-      background: linear-gradient(135deg, #0f63ff, #00c3ff);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      color: white;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>No Thanks Scanner</title>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
 
-    h2 {
-      font-size: 24px;
-      margin-bottom: 10px;
-    }
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: 'Hind Siliguri', sans-serif;
+            background: #f5f6fa;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            color: #2d3436;
+        }
 
-    #scanner-container {
-      width: 90%;
-      max-width: 350px;
-      aspect-ratio: 1/1;
-      background: white;
-      border-radius: 30px;
-      overflow: hidden;
-      position: relative;
-      box-shadow: 0 0 20px rgba(0,0,0,0.3);
-    }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
 
-    #reader {
-      width: 100%;
-      height: 100%;
-    }
+        .logo {
+            width: 80px;
+            margin-bottom: 15px;
+        }
 
-    #live-code {
-      position: absolute;
-      bottom: 10px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(0, 0, 0, 0.7);
-      color: lime;
-      padding: 6px 12px;
-      border-radius: 12px;
-      font-size: 16px;
-      white-space: nowrap;
-      animation: typeIn 0.4s ease-in-out;
-    }
+        .scanner-container {
+            width: 100%;
+            max-width: 400px;
+            aspect-ratio: 1;
+            background: #000;
+            border-radius: 20px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+        }
 
-    #result {
-      margin-top: 20px;
-      font-size: 18px;
-      text-align: center;
-      padding: 10px 20px;
-      border-radius: 10px;
-      animation: fadeIn 1s ease-in-out;
-    }
+        #reader {
+            width: 100%;
+            height: 100%;
+        }
 
-    @keyframes fadeIn {
-      from { opacity: 0; transform: scale(0.95); }
-      to { opacity: 1; transform: scale(1); }
-    }
+        .scan-guide {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 70%;
+            height: 70%;
+            border: 3px solid rgba(255,255,255,0.8);
+            border-radius: 15px;
+            pointer-events: none;
+        }
 
-    @keyframes typeIn {
-      from { opacity: 0; bottom: 0; }
-      to { opacity: 1; bottom: 10px; }
-    }
-  </style>
+        .result-card {
+            margin-top: 25px;
+            padding: 20px;
+            border-radius: 15px;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            font-size: 18px;
+            background: white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .israeli {
+            color: #e74c3c;
+            border: 2px solid #e74c3c;
+        }
+
+        .non-israeli {
+            color: #27ae60;
+            border: 2px solid #27ae60;
+        }
+
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255,255,255,0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+            font-size: 18px;
+        }
+    </style>
 </head>
 <body>
+    <div class="loading">ক্যামেরা প্রস্তুত হচ্ছে...</div>
 
-  <h2>QR স্ক্যান করুন</h2>
+    <div class="header">
+        <h1>নো থ্যাঙ্কস স্ক্যানার</h1>
+        <p>QR কোড স্ক্যান করুন → ইসরায়েলি পণ্য চিহ্নিত করুন</p>
+    </div>
 
-  <div id="scanner-container">
-    <div id="reader"></div>
-    <div id="live-code"></div>
-  </div>
+    <div class="scanner-container">
+        <div id="reader"></div>
+        <div class="scan-guide"></div>
+    </div>
 
-  <div id="result"></div>
+    <div id="result" class="result-card"></div>
 
-  <script>
-    let html5QrCode;
-    let lastCode = "";
+<script>
+let html5QrCode;
+const loading = document.querySelector('.loading');
 
-    function isIsraeliProduct(code) {
-      return code.startsWith("729");
-    }
-
-    function displayResult(code) {
-      const result = document.getElementById("result");
-      const shortCode = code.length > 15 ? code.slice(0, 15) + "..." : code;
-      if (isIsraeliProduct(code)) {
-        result.innerHTML = <span style="color:red;">No Thanks - ইসরায়েলি পণ্য<br><small>${shortCode}</small></span>;
-      } else {
-        result.innerHTML = <span style="color:lime;">এই পণ্য ইসরায়েলি নয়<br><small>${shortCode}</small></span>;
-      }
-    }
-
-    function showLiveCode(code) {
-      const liveCode = document.getElementById("live-code");
-      const shortCode = code.length > 30 ? code.slice(0, 30) + "..." : code;
-      liveCode.innerText = shortCode;
-    }
-
+// ক্যামেরা সেটআপ
+function setupCamera() {
     Html5Qrcode.getCameras().then(devices => {
-      if (devices.length > 0) {
-        const frontCamera = devices.find(device =>
-          device.label.toLowerCase().includes('front')
-        ) || devices[0]; // না পেলে default ক্যামেরা
+        if (devices.length === 0) {
+            showError("কোনো ক্যামেরা পাওয়া যায়নি!");
+            return;
+        }
+
+        // ফ্রন্ট ক্যামেরা ডিটেক্ট (স্মার্টফোনের জন্য)
+        const frontCamera = devices.find(device => 
+            device.label.toLowerCase().includes('front') || 
+            device.label.includes('2') // কিছু ডিভাইসে 0=ব্যাক, 1=ফ্রন্ট
+        );
 
         html5QrCode = new Html5Qrcode("reader");
-
+        
         html5QrCode.start(
-          frontCamera.id,
-          { fps: 10, qrbox: 250 },
-          decodedText => {
-            if (decodedText !== lastCode) {
-              lastCode = decodedText;
-              showLiveCode(decodedText);
-              html5QrCode.stop();
-              displayResult(decodedText);
-            }
-          },
-          error => {
-            // অপশনাল: স্ক্যানিং এরর হলে কিছু করতে পারো
-          }
-        );
-      } else {
-        document.getElementById("result").innerText = "ক্যামেরা খুঁজে পাওয়া যায়নি";
-      }
+            frontCamera?.id || devices[0].id,
+            {
+                fps: 10,
+                qrbox: 250,
+                facingMode: "user" // মোবাইলে ফ্রন্ট ক্যামেরা ফোর্স
+            },
+            decodedText => handleScan(decodedText),
+            error => console.warn("QR স্ক্যানিং এরর:", error)
+        ).then(() => {
+            loading.style.display = 'none';
+        });
+
     }).catch(err => {
-      document.getElementById("result").innerText = "ক্যামেরা এক্সেস ব্যর্থ: " + err;
+        showError("ক্যামেরা এক্সেস দেওয়া হয়নি!");
+        console.error("ক্যামেরা এরর:", err);
     });
-  </script>
+}
+
+function handleScan(code) {
+    const result = document.getElementById("result");
+    const shortCode = code.length > 25 ? code.slice(0,25)+"..." : code;
+
+    if(isIsraeliProduct(code)) {
+        result.innerHTML = `
+            <div style="font-size:24px; margin-bottom:10px;">🚫</div>
+            <div style="font-weight:600;">ইসরায়েলি পণ্য!</div>
+            <div style="font-size:14px; color:#666; margin-top:8px;">${shortCode}</div>
+        `;
+        result.className = "result-card israeli";
+    } else {
+        result.innerHTML = `
+            <div style="font-size:24px; margin-bottom:10px;">✅</div>
+            <div style="font-weight:600;">নিরাপদ পণ্য</div>
+            <div style="font-size:14px; color:#666; margin-top:8px;">${shortCode}</div>
+        `;
+        result.className = "result-card non-israeli";
+    }
+
+    // ৫ সেকেন্ড পর রেজাল্ট মেসেজ অটো হাইড
+    setTimeout(() => {
+        result.style.opacity = '0';
+        setTimeout(() => result.style.opacity = '1', 1000);
+    }, 5000);
+}
+
+function isIsraeliProduct(code) {
+    // ইসরায়েলি পণ্য আইডেন্টিফাই করার লজিক (729 = ইসরায়েলের বারকোড প্রিফিক্স)
+    return code.startsWith("729") || code.includes("israel");
+}
+
+function showError(message) {
+    loading.style.display = 'none';
+    document.getElementById("result").innerHTML = `
+        <div style="color:#e74c3c;">⚠️ ${message}</div>
+        <button onclick="location.reload()" style="margin-top:10px; padding:8px 20px; background:#3498db; color:white; border:none; border-radius:8px;">
+            আবার চেষ্টা করুন
+        </button>
+    `;
+}
+
+// পেজ লোড হলে ক্যামেরা শুরু করুন
+window.onload = setupCamera;
+</script>
 
 </body>
 </html>
