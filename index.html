@@ -1,60 +1,78 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>No Thanks - QR Scanner</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>No Thanks Scanner</title>
   <style>
     body {
-      font-family: sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #007BFF; /* নীল ব্যাকগ্রাউন্ড */
+      color: white;
+      font-family: 'Segoe UI', sans-serif;
       text-align: center;
-      padding: 30px;
-      background: #f0f0f0;
     }
-    video {
-      width: 100%;
-      max-width: 400px;
-      border: 3px solid #000;
-      margin-bottom: 20px;
+
+    h1 {
+      margin-top: 30px;
+      font-size: 28px;
     }
+
+    #reader {
+      width: 90%;
+      max-width: 500px;
+      margin: 30px auto;
+      border: 4px solid white;
+      border-radius: 10px;
+    }
+
     #result {
+      margin-top: 20px;
       font-size: 24px;
       font-weight: bold;
-      color: red;
+      color: yellow;
     }
   </style>
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 </head>
 <body>
   <h1>Scan Product QR</h1>
-  <video id="preview"></video>
+  <div id="reader"></div>
   <div id="result">Waiting for scan...</div>
 
-  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <script>
-    const resultElement = document.getElementById('result');
+    const israelCodes = ["729"]; // ইসরায়েলি বারকোড শুরু হয় 729 দিয়ে
 
-    const html5QrCode = new Html5Qrcode("preview");
-    const qrCodeSuccessCallback = (decodedText, decodedResult) => {
-      html5QrCode.stop();
-      
-      // Simple example: If QR text contains "israel", block it
-      if (decodedText.toLowerCase().includes("israel")) {
-        resultElement.innerText = "No Thanks!";
+    function checkProduct(text) {
+      const code = text.substring(0, 3);
+      const result = document.getElementById("result");
+
+      if (israelCodes.includes(code)) {
+        result.innerText = "No Thanks (Israeli Product)";
+        result.style.color = "red";
       } else {
-        resultElement.innerText = "This product is OK.";
+        result.innerText = "Safe Product";
+        result.style.color = "lime";
       }
-    };
+    }
 
-    const config = {
-      fps: 10,
-      qrbox: 250,
-      facingMode: { exact: "environment" } // Force back camera
-    };
+    const html5QrCode = new Html5Qrcode("reader");
 
     Html5Qrcode.getCameras().then(devices => {
       if (devices && devices.length) {
-        html5QrCode.start({ deviceId: { exact: devices[0].id } }, config, qrCodeSuccessCallback);
+        const backCam = devices.find(device => device.label.toLowerCase().includes("back")) || devices[0];
+        html5QrCode.start(
+          backCam.id,
+          {
+            fps: 10,
+            qrbox: { width: 300, height: 300 }
+          },
+          checkProduct
+        ).catch(err => {
+          document.getElementById("result").innerText = Camera error: ${err};
+        });
       }
-    }).catch(err => {
-      resultElement.innerText = "Camera error: " + err;
     });
   </script>
 </body>
