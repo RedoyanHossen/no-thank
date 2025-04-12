@@ -1,139 +1,152 @@
-<!DOCTYPE html><html lang="bn">
+<!DOCTYPE html>
+<html lang="bn">
 <head>
   <meta charset="UTF-8">
-  <title>No Thanks - Scanner</title>
+  <title>No Thanks Scanner</title>
   <script src="https://unpkg.com/html5-qrcode"></script>
   <link href="https://fonts.googleapis.com/css2?family=Anek+Bangla:wght@500&display=swap" rel="stylesheet">
   <style>
     body {
-      font-family: 'Anek Bangla', sans-serif;
-      background: linear-gradient(to right, #0f2027, #203a43, #2c5364);
       margin: 0;
       padding: 0;
-      height: 100vh;
+      font-family: 'Anek Bangla', sans-serif;
+      background: linear-gradient(135deg, #0f63ff, #00c3ff);
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
+      height: 100vh;
       color: white;
-    }h2 {
-  font-size: 28px;
-  margin-bottom: 20px;
-  text-shadow: 2px 2px 8px rgba(0,0,0,0.3);
-}
+    }
 
-#reader {
-  width: 90vw;
-  max-width: 400px;
-  height: 90vw;
-  max-height: 400px;
-  border-radius: 16px;
-  box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
-  background-color: rgba(255, 255, 255, 0.1);
-  overflow: hidden;
-}
+    h2 {
+      font-size: 24px;
+      margin-bottom: 10px;
+    }
 
-#result {
-  margin-top: 25px;
-  font-size: 20px;
-  padding: 15px;
-  border-radius: 10px;
-  background: rgba(255,255,255,0.1);
-  box-shadow: 0 0 10px rgba(255,255,255,0.2);
-  animation: fadeIn 0.7s ease-in-out;
-  max-width: 90%;
-  word-wrap: break-word;
-}
+    #scanner-container {
+      width: 90%;
+      max-width: 350px;
+      aspect-ratio: 1/1;
+      background: white;
+      border-radius: 30px;
+      overflow: hidden;
+      position: relative;
+      box-shadow: 0 0 20px rgba(0,0,0,0.3);
+    }
 
-#camera-switch {
-  margin-top: 15px;
-  padding: 10px 20px;
-  background: #00c6ff;
-  background: linear-gradient(to right, #0072ff, #00c6ff);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 16px;
-  transition: transform 0.2s;
-}
+    #reader {
+      width: 100%;
+      height: 100%;
+    }
 
-#camera-switch:hover {
-  transform: scale(1.05);
-}
+    #scan-btn {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: white;
+      border: none;
+      margin-top: 20px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      cursor: pointer;
+    }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
-}
+    #camera-switch {
+      margin-top: 10px;
+      background: transparent;
+      color: white;
+      border: 1px solid white;
+      padding: 6px 12px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 14px;
+    }
 
+    #result {
+      margin-top: 20px;
+      font-size: 18px;
+      text-align: center;
+      padding: 10px 20px;
+      border-radius: 10px;
+      animation: fadeIn 1s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
   </style>
 </head>
 <body>
-  <h2>ইসরায়েলি পণ্য স্ক্যান করুন</h2>
-  <div id="reader"></div>
-  <button id="camera-switch">ক্যামেরা পরিবর্তন করুন</button>
-  <div id="result">স্ক্যান করার জন্য QR কোড দেখান</div>  <script>
-    let currentCameraIndex = 0;
+
+  <h2>QR স্ক্যান করুন</h2>
+
+  <div id="scanner-container">
+    <div id="reader"></div>
+  </div>
+
+  <button id="scan-btn" onclick="startScan()"></button>
+  <button id="camera-switch" onclick="switchCamera()">ক্যামেরা পরিবর্তন</button>
+
+  <div id="result"></div>
+
+  <script>
+    let currentCamera = 0;
     let cameras = [];
-    let html5QrCode = new Html5Qrcode("reader");
+    let html5QrCode;
 
-    function isIsraeliProduct(text) {
-      return text.startsWith("729");
+    function isIsraeliProduct(code) {
+      return code.startsWith("729");
     }
 
-    function shortText(text) {
-      return text.length > 25 ? text.substring(0, 25) + "..." : text;
-    }
-
-    function showResult(decodedText) {
-      const resultDiv = document.getElementById("result");
-      resultDiv.style.animation = 'none';
-      void resultDiv.offsetWidth;
-      resultDiv.style.animation = null;
-
-      if (isIsraeliProduct(decodedText)) {
-        resultDiv.innerHTML = <span style='color: red;'>No Thanks - ইসরায়েলি পণ্য<br>QR: ${shortText(decodedText)}</span>;
+    function displayResult(code) {
+      const result = document.getElementById("result");
+      const shortCode = code.length > 15 ? code.slice(0, 15) + "..." : code;
+      if (isIsraeliProduct(code)) {
+        result.innerHTML = <span style="color:red;">No Thanks - ইসরায়েলি পণ্য<br><small>${shortCode}</small></span>;
       } else {
-        resultDiv.innerHTML = <span style='color: #00ffcc;'>এই পণ্য ইসরায়েলি নয়<br>QR: ${shortText(decodedText)}</span>;
+        result.innerHTML = <span style="color:lime;">এই পণ্য ইসরায়েলি নয়<br><small>${shortCode}</small></span>;
       }
     }
 
-    function startCamera(index) {
-      if (html5QrCode._isScanning) {
-        html5QrCode.stop().then(() => {
-          html5QrCode.clear();
-          startCamera(index);
-        });
-        return;
-      }
+    function startScan() {
+      html5QrCode?.stop().then(() => {
+        html5QrCode.clear();
+        scan();
+      }).catch(() => {
+        scan();
+      });
+    }
 
-      const cameraId = cameras[index].id;
+    function scan() {
+      html5QrCode = new Html5Qrcode("reader");
       html5QrCode.start(
-        cameraId,
-        { fps: 10, qrbox: { width: 300, height: 300 } },
+        cameras[currentCamera].id,
+        { fps: 10, qrbox: 250 },
         decodedText => {
           html5QrCode.stop();
-          showResult(decodedText);
+          displayResult(decodedText);
         },
-        error => {}
+        error => { /* Ignored */ }
       );
     }
 
-    Html5Qrcode.getCameras().then(devices => {
-      cameras = devices;
-      if (cameras.length > 0) {
-        startCamera(currentCameraIndex);
-      } else {
-        document.getElementById("result").innerText = "কোনো ক্যামেরা খুঁজে পাওয়া যায়নি";
+    function switchCamera() {
+      if (cameras.length > 1) {
+        currentCamera = (currentCamera + 1) % cameras.length;
+        startScan();
       }
-    }).catch(err => {
-      document.getElementById("result").innerText = "ক্যামেরা এক্সেস পাওয়া যায়নি: " + err;
-    });
+    }
 
-    document.getElementById("camera-switch").addEventListener("click", () => {
-      currentCameraIndex = (currentCameraIndex + 1) % cameras.length;
-      startCamera(currentCameraIndex);
+    Html5Qrcode.getCameras().then(devs => {
+      cameras = devs;
+      if (cameras.length > 0) {
+        startScan();
+      } else {
+        document.getElementById("result").innerText = "ক্যামেরা পাওয়া যায়নি";
+      }
     });
-  </script></body>
+  </script>
+
+</body>
 </html>
