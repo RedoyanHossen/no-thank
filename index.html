@@ -1,69 +1,60 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <title>No Thanks - Scanner</title>
-  <script src="https://unpkg.com/html5-qrcode"></script>
+  <title>No Thanks - QR Scanner</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
+      font-family: sans-serif;
       text-align: center;
-      margin-top: 50px;
+      padding: 30px;
+      background: #f0f0f0;
     }
-    #reader {
-      width: 300px;
-      margin: auto;
+    video {
+      width: 100%;
+      max-width: 400px;
+      border: 3px solid #000;
+      margin-bottom: 20px;
     }
     #result {
-      margin-top: 20px;
-      font-size: 20px;
+      font-size: 24px;
       font-weight: bold;
+      color: red;
     }
   </style>
 </head>
 <body>
-  <h2>ইসরায়েলি পণ্য স্ক্যান করুন</h2>
-  <div id="reader"></div>
-  <div id="result"></div>
+  <h1>Scan Product QR</h1>
+  <video id="preview"></video>
+  <div id="result">Waiting for scan...</div>
 
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <script>
-    function isIsraeliProduct(text) {
-      return text.startsWith("729");
-    }
+    const resultElement = document.getElementById('result');
 
-    function showResult(decodedText) {
-      const resultDiv = document.getElementById("result");
-      if (isIsraeliProduct(decodedText)) {
-        resultDiv.innerText = "No Thanks - ইসরায়েলি পণ্য";
-        resultDiv.style.color = "red";
+    const html5QrCode = new Html5Qrcode("preview");
+    const qrCodeSuccessCallback = (decodedText, decodedResult) => {
+      html5QrCode.stop();
+      
+      // Simple example: If QR text contains "israel", block it
+      if (decodedText.toLowerCase().includes("israel")) {
+        resultElement.innerText = "No Thanks!";
       } else {
-        resultDiv.innerText = "এই পণ্য ইসরায়েলি নয়";
-        resultDiv.style.color = "green";
+        resultElement.innerText = "This product is OK.";
       }
-    }
+    };
 
-    const html5QrCode = new Html5Qrcode("reader");
+    const config = {
+      fps: 10,
+      qrbox: 250,
+      facingMode: { exact: "environment" } // Force back camera
+    };
 
     Html5Qrcode.getCameras().then(devices => {
       if (devices && devices.length) {
-        const cameraId = devices[0].id;
-        html5QrCode.start(
-          cameraId,
-          {
-            fps: 10,
-            qrbox: 250
-          },
-          decodedText => {
-            html5QrCode.stop(); // স্ক্যান একবারের জন্য
-            showResult(decodedText);
-          },
-          error => {
-            // কোনো ভুল হলে কিছু না করলেও চলবে
-          }
-        );
+        html5QrCode.start({ deviceId: { exact: devices[0].id } }, config, qrCodeSuccessCallback);
       }
     }).catch(err => {
-      console.error("ক্যামেরা একসেস পাওয়া যায়নি:", err);
+      resultElement.innerText = "Camera error: " + err;
     });
   </script>
 </body>
