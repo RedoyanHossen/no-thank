@@ -1,88 +1,98 @@
-<!DOCTYPE html><html lang="en">
+<!DOCTYPE html><html>
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Scan Product QR</title>
-  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <title>No Thanks - Scanner</title>
+  <script src="https://unpkg.com/html5-qrcode"></script>
   <style>
     body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to right, #e0f7ff, #003366);
+      text-align: center;
       margin: 0;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(135deg, #1f1c2c, #928dab);
+      padding: 0;
+      height: 100vh;
       display: flex;
       flex-direction: column;
-      align-items: center;
       justify-content: center;
-      height: 100vh;
-      color: white;
-    }.container {
-  background: rgba(255, 255, 255, 0.05);
-  padding: 20px;
-  border-radius: 20px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(10px);
-  text-align: center;
-}
-
-h1 {
-  font-size: 28px;
-  margin-bottom: 10px;
-  background: -webkit-linear-gradient(#ffffff, #c0c0c0);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+      align-items: center;
+    }h2 {
+  color: #fff;
+  text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
+  margin-bottom: 20px;
 }
 
 #reader {
-  width: 300px;
-  height: 300px;
-  margin: 20px auto;
-  border: 2px solid #ccc;
-  border-radius: 10px;
-  background-color: rgba(255, 255, 255, 0.1);
+  width: 320px;
+  height: 320px;
+  border-radius: 20px;
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.4);
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.1);
 }
 
 #result {
-  font-size: 18px;
-  margin-top: 20px;
-  padding: 15px;
-  background: rgba(0, 0, 0, 0.3);
+  margin-top: 25px;
+  font-size: 22px;
+  font-weight: bold;
+  color: #fff;
+  padding: 10px 20px;
   border-radius: 10px;
-  box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(5px);
+  animation: fadeIn 0.7s ease-in-out;
+}
+
+@keyframes fadeIn {
+  0% { opacity: 0; transform: scale(0.95); }
+  100% { opacity: 1; transform: scale(1); }
 }
 
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Scan Product QR</h1>
-    <div id="reader"></div>
-    <div id="result">Waiting for scan...</div>
-  </div>  <script>
-    function onScanSuccess(decodedText, decodedResult) {
-      document.getElementById('result').innerHTML = `
-        <strong>Product Info:</strong><br>
-        <span style="color: #7CFC00; font-size: 20px;">${decodedText}</span>
-      `;
+  <h2>ইসরায়েলি পণ্য স্ক্যান করুন</h2>
+  <div id="reader"></div>
+  <div id="result"></div>  <script>
+    function isIsraeliProduct(text) {
+      return text.startsWith("729");
+    }
+
+    function showResult(decodedText) {
+      const resultDiv = document.getElementById("result");
+      resultDiv.style.animation = 'none';
+      void resultDiv.offsetWidth; // trigger reflow
+      resultDiv.style.animation = null;
+
+      if (isIsraeliProduct(decodedText)) {
+        resultDiv.innerText = "No Thanks - ইসরায়েলি পণ্য";
+        resultDiv.style.backgroundColor = "rgba(255, 0, 0, 0.6)";
+      } else {
+        resultDiv.innerText = "এই পণ্য ইসরায়েলি নয়";
+        resultDiv.style.backgroundColor = "rgba(0, 128, 0, 0.6)";
+      }
     }
 
     const html5QrCode = new Html5Qrcode("reader");
-    const config = { fps: 10, qrbox: 250 };
 
     Html5Qrcode.getCameras().then(devices => {
       if (devices && devices.length) {
-        const backCamera = devices.find(d => d.label.toLowerCase().includes("back")) || devices[0];
+        const cameraId = devices[0].id;
         html5QrCode.start(
-          { deviceId: { exact: backCamera.id } },
-          config,
-          onScanSuccess
-        ).catch(err => {
-          document.getElementById('result').innerText = Camera Error: ${err};
-        });
-      } else {
-        document.getElementById('result').innerText = "No camera found.";
+          cameraId,
+          {
+            fps: 10,
+            qrbox: 250
+          },
+          decodedText => {
+            html5QrCode.stop(); // স্ক্যান একবারের জন্য
+            showResult(decodedText);
+          },
+          error => {
+            // ভুল হলে কিছু না করলেও চলবে
+          }
+        );
       }
     }).catch(err => {
-      document.getElementById('result').innerText = Camera access error: ${err};
+      console.error("ক্যামেরা একসেস পাওয়া যায়নি:", err);
     });
   </script></body>
 </html>
