@@ -16,12 +16,12 @@
             margin: 0;
             padding: 20px;
             font-family: 'Hind Siliguri', sans-serif;
-            background: #f5f6fa;
+            background: #0a1a2f;
             display: flex;
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
-            color: #2d3436;
+            color: white;
         }
 
         .header {
@@ -30,7 +30,7 @@
         }
 
         .logo {
-            width: 80px;
+            width: 100px;
             margin-bottom: 15px;
         }
 
@@ -42,7 +42,7 @@
             border-radius: 20px;
             overflow: hidden;
             position: relative;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.3);
         }
 
         #reader {
@@ -70,19 +70,20 @@
             max-width: 400px;
             text-align: center;
             font-size: 18px;
-            background: white;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            background: rgba(255,255,255,0.1);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
             transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
         }
 
         .israeli {
-            color: #e74c3c;
-            border: 2px solid #e74c3c;
+            color: #ff4757;
+            border: 2px solid #ff4757;
         }
 
         .non-israeli {
-            color: #27ae60;
-            border: 2px solid #27ae60;
+            color: #2ed573;
+            border: 2px solid #2ed573;
         }
 
         .loading {
@@ -91,12 +92,13 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(255,255,255,0.9);
+            background: rgba(10,26,47,0.9);
             display: flex;
             align-items: center;
             justify-content: center;
             z-index: 999;
             font-size: 18px;
+            color: white;
         }
     </style>
 </head>
@@ -104,8 +106,8 @@
     <div class="loading">ক্যামেরা প্রস্তুত হচ্ছে...</div>
 
     <div class="header">
-        <h1>নো থ্যাঙ্কস স্ক্যানার</h1>
-        <p>QR কোড স্ক্যান করুন → ইসরায়েলি পণ্য চিহ্নিত করুন</p>
+        <h1>বয়কট স্ক্যানার</h1>
+        <p>পণ্যের QR কোড স্ক্যান করুন</p>
     </div>
 
     <div class="scanner-container">
@@ -119,7 +121,7 @@
 let html5QrCode;
 const loading = document.querySelector('.loading');
 
-// ক্যামেরা সেটআপ
+// ব্যাক ক্যামেরা সেটআপ
 function setupCamera() {
     Html5Qrcode.getCameras().then(devices => {
         if (devices.length === 0) {
@@ -127,20 +129,20 @@ function setupCamera() {
             return;
         }
 
-        // ফ্রন্ট ক্যামেরা ডিটেক্ট (স্মার্টফোনের জন্য)
-        const frontCamera = devices.find(device => 
-            device.label.toLowerCase().includes('front') || 
-            device.label.includes('2') // কিছু ডিভাইসে 0=ব্যাক, 1=ফ্রন্ট
+        // ব্যাক ক্যামেরা সিলেক্ট (প্রাইমারি ক্যামেরা)
+        const backCamera = devices.find(device => 
+            device.label.toLowerCase().includes('back') || 
+            device.label.includes('0') // অধিকাংশ ডিভাইসে 0=ব্যাক ক্যামেরা
         );
 
         html5QrCode = new Html5Qrcode("reader");
         
         html5QrCode.start(
-            frontCamera?.id || devices[0].id,
+            backCamera?.id || devices[0].id,
             {
                 fps: 10,
                 qrbox: 250,
-                facingMode: "user" // মোবাইলে ফ্রন্ট ক্যামেরা ফোর্স
+                facingMode: "environment" // ব্যাক ক্যামেরা ফোর্স
             },
             decodedText => handleScan(decodedText),
             error => console.warn("QR স্ক্যানিং এরর:", error)
@@ -162,36 +164,40 @@ function handleScan(code) {
         result.innerHTML = `
             <div style="font-size:24px; margin-bottom:10px;">🚫</div>
             <div style="font-weight:600;">ইসরায়েলি পণ্য!</div>
-            <div style="font-size:14px; color:#666; margin-top:8px;">${shortCode}</div>
+            <div style="font-size:14px; color:#ffcccc; margin-top:8px;">${shortCode}</div>
         `;
         result.className = "result-card israeli";
     } else {
         result.innerHTML = `
             <div style="font-size:24px; margin-bottom:10px;">✅</div>
             <div style="font-weight:600;">নিরাপদ পণ্য</div>
-            <div style="font-size:14px; color:#666; margin-top:8px;">${shortCode}</div>
+            <div style="font-size:14px; color:#c8e6c9; margin-top:8px;">${shortCode}</div>
         `;
         result.className = "result-card non-israeli";
     }
 
-    // ৫ সেকেন্ড পর রেজাল্ট মেসেজ অটো হাইড
+    // ৫ সেকেন্ড পর রেজাল্ট মেসেজ অটো রিসেট
     setTimeout(() => {
         result.style.opacity = '0';
-        setTimeout(() => result.style.opacity = '1', 1000);
+        setTimeout(() => {
+            result.style.opacity = '1';
+            result.innerHTML = '';
+            result.className = "result-card";
+        }, 1000);
     }, 5000);
 }
 
 function isIsraeliProduct(code) {
-    // ইসরায়েলি পণ্য আইডেন্টিফাই করার লজিক (729 = ইসরায়েলের বারকোড প্রিফিক্স)
-    return code.startsWith("729") || code.includes("israel");
+    // ইসরায়েলি পণ্য আইডেন্টিফাই করার লজিক (729 = ইসরায়েলের বারকোড)
+    return code.startsWith("729") || code.toLowerCase().includes("israel");
 }
 
 function showError(message) {
     loading.style.display = 'none';
     document.getElementById("result").innerHTML = `
-        <div style="color:#e74c3c;">⚠️ ${message}</div>
-        <button onclick="location.reload()" style="margin-top:10px; padding:8px 20px; background:#3498db; color:white; border:none; border-radius:8px;">
-            আবার চেষ্টা করুন
+        <div style="color:#ff6b6b;">⚠️ ${message}</div>
+        <button onclick="location.reload()" style="margin-top:10px; padding:10px 25px; background:#3498db; color:white; border:none; border-radius:8px; font-family: inherit;">
+            রিট্রি
         </button>
     `;
 }
