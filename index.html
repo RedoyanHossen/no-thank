@@ -109,23 +109,35 @@
       liveCode.innerText = shortCode;
     }
 
-    html5QrCode = new Html5Qrcode("reader");
+    Html5Qrcode.getCameras().then(devices => {
+      if (devices.length > 0) {
+        const frontCamera = devices.find(device =>
+          device.label.toLowerCase().includes('front')
+        ) || devices[0]; // না পেলে default ক্যামেরা
 
-    html5QrCode.start(
-      { facingMode: "user" }, // শুধুমাত্র ফ্রন্ট ক্যামেরা
-      { fps: 10, qrbox: 250 },
-      decodedText => {
-        if (decodedText !== lastCode) {
-          lastCode = decodedText;
-          showLiveCode(decodedText);
-          html5QrCode.stop();
-          displayResult(decodedText);
-        }
-      },
-      error => {
-        // কিছু না করলেও চলবে
+        html5QrCode = new Html5Qrcode("reader");
+
+        html5QrCode.start(
+          frontCamera.id,
+          { fps: 10, qrbox: 250 },
+          decodedText => {
+            if (decodedText !== lastCode) {
+              lastCode = decodedText;
+              showLiveCode(decodedText);
+              html5QrCode.stop();
+              displayResult(decodedText);
+            }
+          },
+          error => {
+            // অপশনাল: স্ক্যানিং এরর হলে কিছু করতে পারো
+          }
+        );
+      } else {
+        document.getElementById("result").innerText = "ক্যামেরা খুঁজে পাওয়া যায়নি";
       }
-    );
+    }).catch(err => {
+      document.getElementById("result").innerText = "ক্যামেরা এক্সেস ব্যর্থ: " + err;
+    });
   </script>
 
 </body>
