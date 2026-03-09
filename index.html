@@ -1,210 +1,432 @@
 <!DOCTYPE html>
-<html lang="bn">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Product Scanner</title>
-    <script src="https://unpkg.com/html5-qrcode"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@500;600&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meet Clone - WebRTC Video Chat</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Socket.io Client Script dynamically from the node server -->
+    <script src="/socket.io/socket.io.js"></script>
     <style>
-        * {
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        body {
-            margin: 0;
-            padding: 20px;
-            font-family: 'Hind Siliguri', sans-serif;
-            background: #0a1a2f;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
-            color: white;
-        }
-
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .logo {
-            width: 100px;
-            margin-bottom: 15px;
-        }
-
-        .scanner-container {
+        body { font-family: 'Inter', sans-serif; background-color: #111827; color: white; margin: 0; overflow-x: hidden; }
+        
+        /* Video Grid Layout */
+        #video-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
             width: 100%;
-            max-width: 400px;
-            aspect-ratio: 1;
-            background: #000;
-            border-radius: 20px;
-            overflow: hidden;
+            height: calc(100vh - 80px); /* Leave room for bottom controls */
+            padding: 1rem;
+            align-content: center;
+            justify-content: center;
+        }
+
+        /* Styling individual video elements */
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 0.75rem;
+            background-color: #1f2937;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transform: scaleX(-1); /* Mirror local video visually */
+        }
+
+        .video-wrapper {
             position: relative;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.3);
-        }
-
-        #reader {
             width: 100%;
             height: 100%;
-        }
-
-        .scan-guide {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 70%;
-            height: 70%;
-            border: 3px solid rgba(255,255,255,0.8);
-            border-radius: 15px;
-            pointer-events: none;
-        }
-
-        .result-card {
-            margin-top: 25px;
-            padding: 20px;
-            border-radius: 15px;
-            width: 100%;
-            max-width: 400px;
-            text-align: center;
-            font-size: 18px;
-            background: rgba(255,255,255,0.1);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-            transition: all 0.3s ease;
-            backdrop-filter: blur(10px);
-        }
-
-        .israeli {
-            color: #ff4757;
-            border: 2px solid #ff4757;
-        }
-
-        .non-israeli {
-            color: #2ed573;
-            border: 2px solid #2ed573;
-        }
-
-        .loading {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(10,26,47,0.9);
+            min-height: 250px;
+            max-height: 80vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            z-index: 999;
-            font-size: 18px;
-            color: white;
         }
+
+        /* Controls bar */
+        #controls {
+            height: 80px;
+            background-color: #1f2937;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1.5rem;
+            padding: 0 1rem;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            z-index: 10;
+        }
+
+        /* Hidden class for toggling screens */
+        .hidden { display: none !important; }
     </style>
 </head>
-<body>
-    <div class="loading">ক্যামেরা প্রস্তুত হচ্ছে...</div>
+<body class="bg-gray-900 text-white min-h-screen flex flex-col">
 
-    <div class="header">
-        <h1> স্ক্যানার</h1>
-        <p>পণ্যের QR কোড স্ক্যান করুন</p>
+    <!-- Landing / Join Screen -->
+    <div id="join-screen" class="flex flex-col items-center justify-center min-h-screen px-4">
+        <div class="bg-gray-800 p-8 rounded-2xl shadow-2xl max-w-md w-full text-center border border-gray-700">
+            <h1 class="text-3xl font-bold mb-2">Video Meetings</h1>
+            <p class="text-gray-400 mb-8">Secure, high-quality video meetings for everyone.</p>
+            
+            <button id="create-room-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition duration-200 mb-6 flex items-center justify-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                Create New Room
+            </button>
+            
+            <div class="flex items-center justify-between mb-6">
+                <hr class="w-full border-gray-600">
+                <span class="px-3 text-gray-500 text-sm">or</span>
+                <hr class="w-full border-gray-600">
+            </div>
+
+            <div class="flex flex-col gap-3">
+                <input type="text" id="room-id-input" placeholder="Enter Room ID" class="w-full bg-gray-900 border border-gray-700 text-white rounded-lg py-3 px-4 focus:outline-none focus:border-blue-500 transition">
+                <button id="join-room-btn" class="w-full bg-gray-700 hover:bg-gray-600 text-white font-semibold py-3 px-4 rounded-lg transition duration-200">
+                    Join Room
+                </button>
+            </div>
+        </div>
     </div>
 
-    <div class="scanner-container">
-        <div id="reader"></div>
-        <div class="scan-guide"></div>
+    <!-- Active Call Screen -->
+    <div id="call-screen" class="hidden flex-col h-screen w-full relative">
+        <!-- Header Info -->
+        <div class="absolute top-0 left-0 w-full p-4 flex justify-between items-center z-10 bg-gradient-to-b from-gray-900/80 to-transparent">
+            <div class="bg-gray-800/80 backdrop-blur-sm border border-gray-700 px-4 py-2 rounded-lg flex items-center gap-3">
+                <span class="text-sm text-gray-300">Room:</span>
+                <span id="display-room-id" class="font-mono font-bold tracking-wider">---</span>
+                <button id="copy-btn" class="text-gray-400 hover:text-white transition" title="Copy Room ID">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Video Grid container -->
+        <div id="video-grid"></div>
+
+        <!-- Bottom Controls -->
+        <div id="controls">
+            <button id="mic-toggle" class="bg-gray-700 hover:bg-gray-600 p-4 rounded-full transition duration-200 shadow-lg">
+                <!-- Mic Icon -->
+                <svg id="mic-on-icon" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
+                <svg id="mic-off-icon" class="w-6 h-6 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z m7.414-8l2 2m0 0l2-2m-2 2l2 2m-2-2l-2 2"></path></svg>
+            </button>
+
+            <button id="cam-toggle" class="bg-gray-700 hover:bg-gray-600 p-4 rounded-full transition duration-200 shadow-lg">
+                <!-- Cam Icon -->
+                <svg id="cam-on-icon" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                <svg id="cam-off-icon" class="w-6 h-6 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path></svg>
+            </button>
+
+            <button id="leave-btn" class="bg-red-600 hover:bg-red-700 p-4 rounded-full transition duration-200 shadow-lg" title="Leave Call">
+                <!-- Hangup Icon -->
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 8l2-2m0 0l2-2m-2 2l-2-2m2 2l-2-2m2 2l2 2M5 3a2 2 0 00-2 2v1c0 8.284 6.716 15 15 15h1a2 2 0 002-2v-3.28a1 1 0 00-.684-.948l-4.493-1.498a1 1 0 00-1.21.502l-1.13 2.257a11.042 11.042 0 01-5.516-5.517l2.257-1.128a1 1 0 00.502-1.21L9.228 3.683A1 1 0 008.279 3H5z"></path></svg>
+            </button>
+        </div>
     </div>
 
-    <div id="result" class="result-card"></div>
+    <!-- Application Logic -->
+    <script>
+        // DOM Elements
+        const joinScreen = document.getElementById('join-screen');
+        const callScreen = document.getElementById('call-screen');
+        const createRoomBtn = document.getElementById('create-room-btn');
+        const joinRoomBtn = document.getElementById('join-room-btn');
+        const roomInput = document.getElementById('room-id-input');
+        const displayRoomId = document.getElementById('display-room-id');
+        const copyBtn = document.getElementById('copy-btn');
+        const videoGrid = document.getElementById('video-grid');
+        
+        const micToggle = document.getElementById('mic-toggle');
+        const camToggle = document.getElementById('cam-toggle');
+        const leaveBtn = document.getElementById('leave-btn');
+        const micOnIcon = document.getElementById('mic-on-icon');
+        const micOffIcon = document.getElementById('mic-off-icon');
+        const camOnIcon = document.getElementById('cam-on-icon');
+        const camOffIcon = document.getElementById('cam-off-icon');
 
-<script>
-let html5QrCode;
-const loading = document.querySelector('.loading');
+        // State variables
+        let localStream;
+        let socket;
+        let currentRoomId;
+        const peers = {}; // Keep track of WebRTC peer connections
+        const myVideo = document.createElement('video');
+        myVideo.muted = true; // Prevents echo from our own mic
 
-// ব্যাক ক্যামেরা সেটআপ
-function setupCamera() {
-    Html5Qrcode.getCameras().then(devices => {
-        if (devices.length === 0) {
-            showError("কোনো ক্যামেরা পাওয়া যায়নি!");
-            return;
+        // STUN Servers for WebRTC NAT traversal
+        const rtcConfig = {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' }
+            ]
+        };
+
+        // Utility: Generate a random room ID (e.g., abc-defg-hij)
+        function generateRoomId() {
+            const chars = 'abcdefghijklmnopqrstuvwxyz';
+            const randomStr = (length) => Array.from({length}, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+            return `${randomStr(3)}-${randomStr(4)}-${randomStr(3)}`;
         }
 
-        // ব্যাক ক্যামেরা সিলেক্ট (প্রাইমারি ক্যামেরা)
-        const backCamera = devices.find(device => 
-            device.label.toLowerCase().includes('back') || 
-            device.label.includes('0') // অধিকাংশ ডিভাইসে 0=ব্যাক ক্যামেরা
-        );
+        // --- Step 1: Initialize Media and Enter Call UI ---
+        async function startCall(roomId) {
+            currentRoomId = roomId;
+            displayRoomId.textContent = currentRoomId;
+            joinScreen.classList.add('hidden');
+            callScreen.classList.remove('hidden');
+            callScreen.classList.add('flex');
 
-        html5QrCode = new Html5Qrcode("reader");
-        
-        html5QrCode.start(
-            backCamera?.id || devices[0].id,
-            {
-                fps: 10,
-                qrbox: 250,
-                facingMode: "environment" // ব্যাক ক্যামেরা ফোর্স
-            },
-            decodedText => handleScan(decodedText),
-            error => console.warn("QR স্ক্যানিং এরর:", error)
-        ).then(() => {
-            loading.style.display = 'none';
+            try {
+                // Try requesting Camera & Mic permissions
+                localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            } catch (error) {
+                console.warn('Could not start video source, trying audio only...', error);
+                
+                try {
+                    // Fallback: Try audio only if camera is unavailable
+                    localStream = await navigator.mediaDevices.getUserMedia({ video: false, audio: true });
+                    
+                    // Update UI to show camera is off
+                    camToggle.classList.add('bg-red-600', 'hover:bg-red-700');
+                    camToggle.classList.remove('bg-gray-700', 'hover:bg-gray-600');
+                    camOnIcon.classList.add('hidden');
+                    camOffIcon.classList.remove('hidden');
+                } catch (errorAudio) {
+                    console.error('Error accessing any media devices.', errorAudio);
+                    alert('Could not access camera or microphone. You will join as a viewer.');
+                    
+                    // Create an empty stream for viewer mode
+                    localStream = new MediaStream(); 
+                    
+                    // Update UI to show both camera and mic are off
+                    camToggle.classList.add('bg-red-600', 'hover:bg-red-700');
+                    camToggle.classList.remove('bg-gray-700', 'hover:bg-gray-600');
+                    camOnIcon.classList.add('hidden');
+                    camOffIcon.classList.remove('hidden');
+                    
+                    micToggle.classList.add('bg-red-600', 'hover:bg-red-700');
+                    micToggle.classList.remove('bg-gray-700', 'hover:bg-gray-600');
+                    micOnIcon.classList.add('hidden');
+                    micOffIcon.classList.remove('hidden');
+                }
+            }
+
+            addVideoStream(myVideo, localStream, 'local-video');
+
+            // Initialize Socket.io connection
+            initSocket();
+        }
+
+        // --- Step 2: Socket.io Signaling ---
+        function initSocket() {
+            // Note: In a live environment, this connects to your Node.js server.
+            // If running strictly in a browser preview without the backend, this will fail.
+            if(typeof io !== 'undefined') {
+                socket = io('/'); 
+            } else {
+                console.warn("Socket.io is not loaded. Ensure your backend server is running.");
+                return;
+            }
+
+            // Join the requested room
+            socket.emit('join-room', currentRoomId, socket.id);
+
+            // A new user joins the room
+            socket.on('user-connected', async (newUserId) => {
+                console.log(`New user connected: ${newUserId}`);
+                const peerConnection = createPeerConnection(newUserId);
+                peers[newUserId] = peerConnection;
+
+                localStream.getTracks().forEach(track => {
+                    peerConnection.addTrack(track, localStream);
+                });
+
+                const offer = await peerConnection.createOffer();
+                await peerConnection.setLocalDescription(offer);
+
+                socket.emit('offer', {
+                    target: newUserId,
+                    caller: socket.id,
+                    sdp: offer
+                });
+            });
+
+            // We receive an offer
+            socket.on('offer', async (payload) => {
+                console.log(`Received offer from ${payload.caller}`);
+                const peerConnection = createPeerConnection(payload.caller);
+                peers[payload.caller] = peerConnection;
+
+                localStream.getTracks().forEach(track => {
+                    peerConnection.addTrack(track, localStream);
+                });
+
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(payload.sdp));
+                
+                const answer = await peerConnection.createAnswer();
+                await peerConnection.setLocalDescription(answer);
+
+                socket.emit('answer', {
+                    target: payload.caller,
+                    caller: socket.id,
+                    sdp: answer
+                });
+            });
+
+            // We receive an answer
+            socket.on('answer', async (payload) => {
+                console.log(`Received answer from ${payload.caller}`);
+                const peerConnection = peers[payload.caller];
+                if (peerConnection) {
+                    await peerConnection.setRemoteDescription(new RTCSessionDescription(payload.sdp));
+                }
+            });
+
+            // Receive ICE Candidates
+            socket.on('ice-candidate', (incoming) => {
+                const peerConnection = peers[incoming.caller];
+                if (peerConnection) {
+                    peerConnection.addIceCandidate(new RTCIceCandidate(incoming.candidate)).catch(e => console.error(e));
+                }
+            });
+
+            // Handle user leaving
+            socket.on('user-disconnected', (userId) => {
+                console.log(`User disconnected: ${userId}`);
+                if (peers[userId]) {
+                    peers[userId].close();
+                    delete peers[userId];
+                }
+                const videoEl = document.getElementById(`video-${userId}`);
+                if (videoEl) videoEl.parentElement.remove();
+            });
+        }
+
+        // --- Step 3: WebRTC Peer Connection Helper ---
+        function createPeerConnection(targetUserId) {
+            const peerConnection = new RTCPeerConnection(rtcConfig);
+
+            peerConnection.onicecandidate = (event) => {
+                if (event.candidate && socket) {
+                    socket.emit('ice-candidate', {
+                        target: targetUserId,
+                        caller: socket.id,
+                        candidate: event.candidate
+                    });
+                }
+            };
+
+            peerConnection.ontrack = (event) => {
+                let videoEl = document.getElementById(`video-${targetUserId}`);
+                if (!videoEl) {
+                    videoEl = document.createElement('video');
+                    videoEl.id = `video-${targetUserId}`;
+                    videoEl.style.transform = "scaleX(1)"; 
+                    addVideoStream(videoEl, event.streams[0], `wrapper-${targetUserId}`);
+                }
+            };
+
+            return peerConnection;
+        }
+
+        // --- Step 4: UI DOM Manipulation ---
+        function addVideoStream(video, stream, wrapperId) {
+            video.srcObject = stream;
+            video.addEventListener('loadedmetadata', () => {
+                video.play();
+            });
+
+            const wrapper = document.createElement('div');
+            wrapper.className = "video-wrapper";
+            if (wrapperId) wrapper.id = wrapperId;
+            
+            wrapper.appendChild(video);
+            videoGrid.appendChild(wrapper);
+        }
+
+        // --- Event Listeners ---
+
+        createRoomBtn.addEventListener('click', () => {
+            const newRoomId = generateRoomId();
+            startCall(newRoomId);
         });
 
-    }).catch(err => {
-        showError("ক্যামেরা এক্সেস দেওয়া হয়নি!");
-        console.error("ক্যামেরা এরর:", err);
-    });
-}
+        joinRoomBtn.addEventListener('click', () => {
+            const roomId = roomInput.value.trim();
+            if (roomId) {
+                startCall(roomId);
+            } else {
+                alert("Please enter a valid Room ID");
+            }
+        });
 
-function handleScan(code) {
-    const result = document.getElementById("result");
-    const shortCode = code.length > 25 ? code.slice(0,25)+"..." : code;
+        copyBtn.addEventListener('click', () => {
+            try {
+                // Using document.execCommand('copy') exclusively as navigator.clipboard is blocked by default inside standard iframes
+                const tempInput = document.createElement('input');
+                tempInput.value = currentRoomId;
+                document.body.appendChild(tempInput);
+                tempInput.select();
+                document.execCommand('copy');
+                document.body.removeChild(tempInput);
+                alert("Room ID copied to clipboard!");
+            } catch (err) {
+                console.error("Copy failed", err);
+                alert("Failed to copy Room ID automatically. Please select it manually.");
+            }
+        });
 
-    if(isIsraeliProduct(code)) {
-        result.innerHTML = `
-            <div style="font-size:24px; margin-bottom:10px;">🚫</div>
-            <div style="font-weight:600;">ইসরায়েলি পণ্য!</div>
-            <div style="font-size:14px; color:#ffcccc; margin-top:8px;">${shortCode}</div>
-        `;
-        result.className = "result-card israeli";
-    } else {
-        result.innerHTML = `
-            <div style="font-size:24px; margin-bottom:10px;">✅</div>
-            <div style="font-weight:600;">নিরাপদ পণ্য</div>
-            <div style="font-size:14px; color:#c8e6c9; margin-top:8px;">${shortCode}</div>
-        `;
-        result.className = "result-card non-israeli";
-    }
+        micToggle.addEventListener('click', () => {
+            const audioTrack = localStream.getAudioTracks()[0];
+            if (audioTrack) {
+                audioTrack.enabled = !audioTrack.enabled;
+                if (audioTrack.enabled) {
+                    micToggle.classList.remove('bg-red-600', 'hover:bg-red-700');
+                    micToggle.classList.add('bg-gray-700', 'hover:bg-gray-600');
+                    micOnIcon.classList.remove('hidden');
+                    micOffIcon.classList.add('hidden');
+                } else {
+                    micToggle.classList.add('bg-red-600', 'hover:bg-red-700');
+                    micToggle.classList.remove('bg-gray-700', 'hover:bg-gray-600');
+                    micOnIcon.classList.add('hidden');
+                    micOffIcon.classList.remove('hidden');
+                }
+            } else {
+                alert("Microphone not available.");
+            }
+        });
 
-    // ৫ সেকেন্ড পর রেজাল্ট মেসেজ অটো রিসেট
-    setTimeout(() => {
-        result.style.opacity = '0';
-        setTimeout(() => {
-            result.style.opacity = '1';
-            result.innerHTML = '';
-            result.className = "result-card";
-        }, 1000);
-    }, 5000);
-}
+        camToggle.addEventListener('click', () => {
+            const videoTrack = localStream.getVideoTracks()[0];
+            if (videoTrack) {
+                videoTrack.enabled = !videoTrack.enabled;
+                if (videoTrack.enabled) {
+                    camToggle.classList.remove('bg-red-600', 'hover:bg-red-700');
+                    camToggle.classList.add('bg-gray-700', 'hover:bg-gray-600');
+                    camOnIcon.classList.remove('hidden');
+                    camOffIcon.classList.add('hidden');
+                } else {
+                    camToggle.classList.add('bg-red-600', 'hover:bg-red-700');
+                    camToggle.classList.remove('bg-gray-700', 'hover:bg-gray-600');
+                    camOnIcon.classList.add('hidden');
+                    camOffIcon.classList.remove('hidden');
+                }
+            } else {
+                alert("Camera not available.");
+            }
+        });
 
-function isIsraeliProduct(code) {
-    // ইসরায়েলি পণ্য আইডেন্টিফাই করার লজিক (729 = ইসরায়েলের বারকোড)
-    return code.startsWith("729") || code.toLowerCase().includes("israel");
-}
+        leaveBtn.addEventListener('click', () => {
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+            }
+            if (socket) socket.disconnect();
+            location.reload();
+        });
 
-function showError(message) {
-    loading.style.display = 'none';
-    document.getElementById("result").innerHTML = `
-        <div style="color:#ff6b6b;">⚠️ ${message}</div>
-        <button onclick="location.reload()" style="margin-top:10px; padding:10px 25px; background:#3498db; color:white; border:none; border-radius:8px; font-family: inherit;">
-            রিট্রি
-        </button>
-    `;
-}
-
-// পেজ লোড হলে ক্যামেরা শুরু করুন
-window.onload = setupCamera;
-</script>
-
+    </script>
 </body>
 </html>
