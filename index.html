@@ -5,7 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Meet Clone - WebRTC Video Chat</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="/socket.io/socket.io.js"></script>
+    
+    <!-- GitHub e host korar jonno local er bodole Socket.io CDN use kora holo -->
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         
@@ -389,9 +392,16 @@
         // --- Step 2: Socket.io Signaling ---
         function initSocket() {
             if(typeof io !== 'undefined') {
-                socket = io('/'); 
+                // WARNING: GitHub Pages e cholte hole ekhane apnar live Node.js backend server er link dite hobe.
+                // Udahoron: const BACKEND_URL = "https://amar-webrtc-server.onrender.com";
+                // Ekhon apni backend host korar por nicher link ti poriborton kore din:
+                const BACKEND_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+                    ? '/' 
+                    : 'https://APNAR-BACKEND-URL-EKHANE-DIN.onrender.com'; 
+                
+                socket = io(BACKEND_URL); 
             } else {
-                showToast("Server connection failed.", true);
+                showToast("Server connection failed. Socket.io not loaded.", true);
                 return;
             }
 
