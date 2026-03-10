@@ -613,6 +613,10 @@
                         ui.chatBadge.classList.remove('hidden');
                     }
                 }
+                else if (data.type === 'leaving') {
+                    // Instantly handle when someone explicitly clicks the leave button
+                    removePeer(conn.peer);
+                }
             });
 
             conn.on('close', () => removePeer(conn.peer));
@@ -647,6 +651,8 @@
             video.srcObject = stream;
             video.autoplay = true;
             video.playsInline = true;
+            video.muted = false; // explicitly ensuring audio works for remote participants
+            video.volume = 1; // max volume
             video.className = 'w-full h-full object-cover transition-opacity duration-500 opacity-0 mirror-video';
             video.onloadedmetadata = () => video.classList.add('opacity-100');
             
@@ -988,8 +994,19 @@
         function endCall() {
             if (isScreenSharing) stopScreenShare();
 
-            // Destroy all peer connections
-            Object.keys(peers).forEach(pid => removePeer(pid));
+            // Notify everyone we are leaving so they remove us immediately
+            Object.values(peers).forEach(p => {
+                if (p.data && p.data.open) {
+                    p.data.send({ type: 'leaving' });
+                }
+            });
+
+            // Destroy all peer connections locally
+            Object.keys(peers).forEach(pid => {
+                if (peers[pid].call) peers[pid].call.close();
+                if (peers[pid].data) peers[pid].data.close();
+                removePeer(pid);
+            });
             
             if (peer) {
                 peer.destroy();
@@ -1006,6 +1023,7 @@
             
             document.getElementById('join-id-input').value = '';
             switchScreen('setup');
+            showToast("You have left the meeting.");
         }
 
         // --- Utility Functions ---
