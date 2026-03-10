@@ -103,6 +103,13 @@
     <!-- SETUP SCREEN (Landing Page) -->
     <div id="setup-screen" class="h-full flex flex-col items-center justify-center p-4 sm:p-6 transition-all duration-500 relative overflow-hidden bg-gradient-to-br from-indigo-50 via-white to-purple-50">
         
+        <!-- Language Toggle -->
+        <div class="absolute top-4 right-4 sm:top-6 sm:right-6 z-50">
+            <button onclick="toggleLanguage()" class="glass-panel text-slate-700 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl text-[10px] sm:text-xs font-bold tracking-widest flex items-center gap-2 hover:bg-white transition-colors shadow-sm cursor-pointer">
+                <i class="fas fa-language text-indigo-500 text-sm sm:text-base"></i> <span id="lang-toggle-text">বাং / EN</span>
+            </button>
+        </div>
+
         <!-- Decorative Background Elements -->
         <div class="absolute top-[0%] left-[-5%] w-[20rem] h-[20rem] sm:w-[40rem] sm:h-[40rem] bg-indigo-200 rounded-full mix-blend-multiply filter blur-[70px] sm:blur-[100px] opacity-40 animate-pulse-slow"></div>
         <div class="absolute bottom-[-10%] right-[-5%] w-[20rem] h-[20rem] sm:w-[40rem] sm:h-[40rem] bg-fuchsia-200 rounded-full mix-blend-multiply filter blur-[70px] sm:blur-[100px] opacity-40 animate-pulse-slow" style="animation-delay: 2s;"></div>
@@ -113,7 +120,7 @@
                 <i class="fas fa-video text-3xl sm:text-5xl"></i>
             </div>
             <h1 class="text-4xl sm:text-6xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-slate-900 via-indigo-900 to-slate-800 mb-2 sm:mb-4 pb-1">QuickMeet</h1>
-            <p class="text-slate-500 max-w-xs sm:max-w-md mx-auto text-sm sm:text-lg font-medium leading-relaxed">Secure, high-quality group video calls right in your browser. Connect with up to 20 people instantly.</p>
+            <p class="text-slate-500 max-w-xs sm:max-w-md mx-auto text-sm sm:text-lg font-medium leading-relaxed" data-i18n="app_desc">Secure, high-quality group video calls right in your browser. Connect with up to 20 people instantly.</p>
         </div>
 
         <div class="glass-panel p-6 sm:p-10 rounded-[2rem] sm:rounded-[2.5rem] w-full max-w-[440px] relative z-10">
@@ -123,7 +130,7 @@
                 <video id="preview-video" class="w-full h-full object-cover transform scale-x-[-1] transition-transform duration-700 group-hover:scale-105" autoplay muted playsinline></video>
                 <div id="preview-overlay" class="absolute inset-0 flex flex-col items-center justify-center text-white bg-slate-900/80 backdrop-blur-md transition-opacity duration-300">
                     <div class="w-10 h-10 sm:w-12 sm:h-12 border-4 border-indigo-400 border-t-transparent rounded-full animate-spin mb-3 sm:mb-4 shadow-[0_0_15px_rgba(99,102,241,0.5)]"></div>
-                    <span class="text-xs sm:text-sm font-semibold tracking-wider uppercase text-indigo-200">Accessing Camera</span>
+                    <span class="text-xs sm:text-sm font-semibold tracking-wider uppercase text-indigo-200" data-i18n="accessing_camera">Accessing Camera</span>
                 </div>
             </div>
 
@@ -133,16 +140,16 @@
                     <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors group-focus-within:text-indigo-500">
                         <i class="fas fa-user text-slate-400 group-focus-within:text-indigo-500 transition-colors"></i>
                     </div>
-                    <input type="text" id="user-name-input" placeholder="What's your name?" class="w-full bg-white/60 border border-white text-slate-800 text-xs sm:text-sm font-medium rounded-xl sm:rounded-2xl block pl-10 sm:pl-12 p-3.5 sm:p-4 outline-none transition-all placeholder-slate-400 focus:bg-white hover:bg-white/80">
+                    <input type="text" id="user-name-input" data-i18n-placeholder="name_placeholder" placeholder="What's your name?" class="w-full bg-white/60 border border-white text-slate-800 text-xs sm:text-sm font-medium rounded-xl sm:rounded-2xl block pl-10 sm:pl-12 p-3.5 sm:p-4 outline-none transition-all placeholder-slate-400 focus:bg-white hover:bg-white/80">
                 </div>
 
                 <button onclick="createRoom()" class="w-full bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white font-bold py-3.5 sm:py-4 px-4 rounded-xl sm:rounded-2xl transition-all duration-300 transform hover:-translate-y-1 hover:shadow-[0_10px_25px_-5px_rgba(79,70,229,0.4)] flex items-center justify-center gap-2 sm:gap-3 text-sm sm:text-base">
-                    <i class="fas fa-video text-base sm:text-lg"></i> Start New Meeting
+                    <i class="fas fa-video text-base sm:text-lg"></i> <span data-i18n="new_meeting_btn">Start New Meeting</span>
                 </button>
                 
                 <div class="relative flex items-center py-1 sm:py-2">
                     <div class="flex-grow border-t border-slate-200"></div>
-                    <span class="flex-shrink-0 mx-3 sm:mx-4 text-slate-400 text-[10px] sm:text-[11px] font-bold uppercase tracking-widest">Or join existing</span>
+                    <span class="flex-shrink-0 mx-3 sm:mx-4 text-slate-400 text-[10px] sm:text-[11px] font-bold uppercase tracking-widest" data-i18n="or_join">Or join existing</span>
                     <div class="flex-grow border-t border-slate-200"></div>
                 </div>
 
@@ -151,16 +158,16 @@
                         <div class="absolute inset-y-0 left-0 pl-3 sm:pl-4 flex items-center pointer-events-none">
                             <i class="fas fa-link text-slate-400 group-focus-within:text-indigo-500 transition-colors text-sm sm:text-base"></i>
                         </div>
-                        <input type="text" id="join-id-input" placeholder="Paste link or ID" class="w-full bg-white/60 border border-white text-slate-800 text-xs sm:text-sm font-medium rounded-xl sm:rounded-2xl block pl-9 sm:pl-12 p-3.5 sm:p-4 outline-none transition-all placeholder-slate-400 focus:bg-white hover:bg-white/80">
+                        <input type="text" id="join-id-input" data-i18n-placeholder="link_placeholder" placeholder="Paste link or ID" class="w-full bg-white/60 border border-white text-slate-800 text-xs sm:text-sm font-medium rounded-xl sm:rounded-2xl block pl-9 sm:pl-12 p-3.5 sm:p-4 outline-none transition-all placeholder-slate-400 focus:bg-white hover:bg-white/80">
                     </div>
                     <button onclick="joinRoom()" class="bg-white hover:bg-slate-50 text-indigo-600 font-bold py-3.5 sm:py-4 px-6 sm:px-8 rounded-xl sm:rounded-2xl transition-all duration-300 border border-white shadow-sm hover:shadow-md transform hover:-translate-y-1 text-sm sm:text-base">
-                        Join
+                        <span data-i18n="join_btn">Join</span>
                     </button>
                 </div>
             </div>
         </div>
         
-        <p class="mt-6 sm:mt-8 text-xs sm:text-sm text-slate-400 font-medium relative z-10">No sign-ups required. 100% Peer-to-Peer.</p>
+        <p class="mt-6 sm:mt-8 text-xs sm:text-sm text-slate-400 font-medium relative z-10" data-i18n="no_signup">No sign-ups required. 100% Peer-to-Peer.</p>
     </div>
 
     <!-- CALL SCREEN -->
@@ -176,16 +183,16 @@
                       <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                       <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
                     </div>
-                    <span class="text-white font-semibold text-[10px] sm:text-xs tracking-wider uppercase hidden sm:inline-block">Secure</span>
+                    <span class="text-white font-semibold text-[10px] sm:text-xs tracking-wider uppercase hidden sm:inline-block" data-i18n="secure_call">Secure</span>
                 </div>
                 
                 <!-- Room ID Display -->
                 <div id="room-info" class="hidden items-center glass-panel-dark rounded-xl sm:rounded-2xl pr-1.5 pl-3 sm:pr-2 sm:pl-6 py-1.5 sm:py-2 shadow-xl group transition-all pointer-events-auto hover:bg-slate-800/80 cursor-pointer max-w-[55%] sm:max-w-none" onclick="copyRoomLink()">
                     <div class="flex flex-col items-start mr-2 sm:mr-4 overflow-hidden w-full">
-                        <span class="text-slate-400 text-[9px] sm:text-[10px] font-bold uppercase tracking-widest mb-0.5 hidden sm:block">Meeting Link</span>
+                        <span class="text-slate-400 text-[9px] sm:text-[10px] font-bold uppercase tracking-widest mb-0.5 hidden sm:block" data-i18n="meeting_link">Meeting Link</span>
                         <span id="display-room-id" class="text-white font-mono text-[11px] sm:text-sm tracking-wider select-all truncate w-full text-left">...</span>
                     </div>
-                    <button class="w-7 h-7 sm:w-10 sm:h-10 shrink-0 flex items-center justify-center bg-white/10 group-hover:bg-indigo-500 rounded-lg sm:rounded-xl text-white transition-all duration-300" title="Copy Meeting Link">
+                    <button class="w-7 h-7 sm:w-10 sm:h-10 shrink-0 flex items-center justify-center bg-white/10 group-hover:bg-indigo-500 rounded-lg sm:rounded-xl text-white transition-all duration-300" data-i18n-title="copy_link_tooltip" title="Copy Meeting Link">
                         <i class="fas fa-copy text-xs sm:text-base"></i>
                     </button>
                 </div>
@@ -200,12 +207,12 @@
                         <div class="absolute inset-0 rounded-full border border-indigo-500/30 animate-ping" style="animation-duration: 3s;"></div>
                         <i class="fas fa-user-plus text-2xl sm:text-4xl text-indigo-400"></i>
                     </div>
-                    <h2 class="text-xl sm:text-3xl font-bold text-white mb-2 sm:mb-3 tracking-tight">You're the only one here</h2>
-                    <p class="text-slate-400 mb-6 sm:mb-8 text-xs sm:text-sm leading-relaxed px-2 sm:px-4">Share the meeting link below with the people you want to meet. Up to 20 users can join this secure room.</p>
+                    <h2 class="text-xl sm:text-3xl font-bold text-white mb-2 sm:mb-3 tracking-tight" data-i18n="only_one_here">You're the only one here</h2>
+                    <p class="text-slate-400 mb-6 sm:mb-8 text-xs sm:text-sm leading-relaxed px-2 sm:px-4" data-i18n="share_link_desc">Share the meeting link below with the people you want to meet. Up to 20 users can join this secure room.</p>
                     
                     <div class="bg-black/50 rounded-xl sm:rounded-2xl p-4 sm:p-5 border border-white/5 group cursor-pointer hover:bg-indigo-500/10 hover:border-indigo-500/30 transition-all duration-300" onclick="copyRoomLink()">
                         <div class="text-[9px] sm:text-[10px] text-indigo-400 font-bold uppercase tracking-widest mb-1.5 sm:mb-2 flex items-center gap-1.5 sm:gap-2">
-                            <i class="fas fa-link"></i> Click to copy link
+                            <i class="fas fa-link"></i> <span data-i18n="click_to_copy">Click to copy link</span>
                         </div>
                         <div class="flex items-center justify-between overflow-hidden">
                             <span id="waiting-room-id" class="text-white font-mono text-xs sm:text-sm truncate mr-3 font-semibold tracking-wide"></span>
@@ -229,7 +236,7 @@
                         <i class="fas fa-microphone-slash text-red-400 text-[10px] sm:text-xs"></i>
                     </div>
                 </div>
-                <div class="absolute top-2 right-2 sm:top-3 sm:right-3 glass-panel-dark px-2 py-0.5 sm:px-3 sm:py-1 rounded-lg sm:rounded-xl text-[8px] sm:text-[10px] font-bold text-white uppercase tracking-wider backdrop-blur-md">You</div>
+                <div class="absolute top-2 right-2 sm:top-3 sm:right-3 glass-panel-dark px-2 py-0.5 sm:px-3 sm:py-1 rounded-lg sm:rounded-xl text-[8px] sm:text-[10px] font-bold text-white uppercase tracking-wider backdrop-blur-md" data-i18n="you_label">You</div>
             </div>
 
             <!-- Floating Controls Pill -->
@@ -285,7 +292,7 @@
             
             <!-- Sidebar Header -->
             <div class="p-4 sm:p-5 border-b border-white/5 flex justify-between items-center bg-white/5 backdrop-blur-md">
-                <h3 id="sidebar-title" class="text-white font-bold text-base sm:text-lg tracking-wide">Chat</h3>
+                <h3 id="sidebar-title" class="text-white font-bold text-base sm:text-lg tracking-wide" data-i18n="chat_title">Chat</h3>
                 <button onclick="closeSidebar()" class="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-all">
                     <i class="fas fa-times text-sm"></i>
                 </button>
@@ -296,12 +303,12 @@
                 <div id="chat-messages" class="flex-grow overflow-y-auto p-4 sm:p-5 space-y-4 hide-scroll flex flex-col">
                     <div class="text-center bg-white/5 rounded-2xl py-3 px-4 mx-auto border border-white/5">
                         <i class="fas fa-lock text-indigo-400 mb-2 text-base sm:text-lg"></i>
-                        <p class="text-[10px] sm:text-[11px] text-slate-400 font-medium leading-relaxed">Welcome to secure chat.<br>Messages are end-to-end encrypted and disappear when the call ends.</p>
+                        <p class="text-[10px] sm:text-[11px] text-slate-400 font-medium leading-relaxed" data-i18n="secure_chat_welcome">Welcome to secure chat.<br>Messages are end-to-end encrypted and disappear when the call ends.</p>
                     </div>
                 </div>
                 <div class="p-3 sm:p-4 border-t border-white/5 bg-black/20 backdrop-blur-xl">
                     <form id="chat-form" onsubmit="sendChatMessage(event)" class="flex gap-2 bg-white/5 p-1 rounded-2xl border border-white/10 focus-within:border-indigo-500/50 transition-colors">
-                        <input type="text" id="chat-input" placeholder="Type a message..." class="flex-grow bg-transparent text-white text-sm rounded-xl px-3 sm:px-4 py-2 sm:py-3 outline-none placeholder-slate-500" disabled>
+                        <input type="text" id="chat-input" data-i18n-placeholder="chat_placeholder" placeholder="Type a message..." class="flex-grow bg-transparent text-white text-sm rounded-xl px-3 sm:px-4 py-2 sm:py-3 outline-none placeholder-slate-500" disabled>
                         <button type="submit" id="chat-submit" class="bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl px-4 sm:px-5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shadow-lg shadow-indigo-500/20" disabled>
                             <i class="fas fa-paper-plane text-xs sm:text-sm"></i>
                         </button>
@@ -321,24 +328,168 @@
     </div>
 
     <script>
+        // --- Translation & i18n System ---
+        const i18n = {
+            en: {
+                app_desc: "Secure, high-quality group video calls right in your browser. Connect with up to 20 people instantly.",
+                accessing_camera: "Accessing Camera",
+                name_placeholder: "What's your name?",
+                new_meeting_btn: "Start New Meeting",
+                or_join: "Or join existing",
+                link_placeholder: "Paste link or ID",
+                join_btn: "Join",
+                no_signup: "No sign-ups required. 100% Peer-to-Peer.",
+                secure_call: "Secure",
+                meeting_link: "Meeting Link",
+                copy_link_tooltip: "Copy Meeting Link",
+                only_one_here: "You're the only one here",
+                share_link_desc: "Share the meeting link below with the people you want to meet. Up to 20 users can join this secure room.",
+                click_to_copy: "Click to copy link",
+                you_label: "You",
+                chat_title: "Chat",
+                secure_chat_welcome: "Welcome to secure chat.<br>Messages are end-to-end encrypted and disappear when the call ends.",
+                chat_placeholder: "Type a message...",
+                meeting_host: "Meeting Host",
+                participant: "Participant",
+                in_call: "In Call",
+                allow_cam_mic: "Please allow camera/microphone access first.",
+                generating_link: "Generating Meeting Link...",
+                enter_id_link: "Please enter a Room ID or Link",
+                connecting_meeting: "Connecting to meeting...",
+                joining: "Joining...",
+                connecting: "Connecting...",
+                joined_room: "has joined the room.",
+                left_room: "left the room.",
+                meeting_not_found: "Meeting not found. The host may have ended it.",
+                conn_error: "Connection error occurred.",
+                camera_off: "Camera Off",
+                camera_unavailable: "Camera Unavailable",
+                share_screen_prompt: "Share your screen when someone joins!",
+                wait_for_chat: "Wait for someone to join before chatting.",
+                no_mic: "No physical microphone connected.",
+                no_cam: "No physical camera connected.",
+                mic_not_found: "No microphone available.",
+                cam_not_found: "No camera available.",
+                left_meeting: "You left the meeting.",
+                link_copied: "Meeting Link copied to clipboard!",
+                link_copy_failed: "Failed to copy link.",
+                guest: "Guest"
+            },
+            bn: {
+                app_desc: "ব্রাউজার থেকেই সুরক্ষিত, উচ্চ-মানের গ্রুপ ভিডিও কল। একসাথে ২০ জনের সাথে সংযুক্ত হন।",
+                accessing_camera: "ক্যামেরা চালু হচ্ছে",
+                name_placeholder: "আপনার নাম কী?",
+                new_meeting_btn: "নতুন মিটিং শুরু করুন",
+                or_join: "অথবা বিদ্যমান মিটিংয়ে যোগ দিন",
+                link_placeholder: "লিঙ্ক বা আইডি পেস্ট করুন",
+                join_btn: "যোগ দিন",
+                no_signup: "কোনো সাইন-আপের প্রয়োজন নেই। ১০০% পিয়ার-টু-পিয়ার।",
+                secure_call: "সুরক্ষিত",
+                meeting_link: "মিটিং লিঙ্ক",
+                copy_link_tooltip: "মিটিং লিঙ্ক কপি করুন",
+                only_one_here: "এখানে শুধু আপনি আছেন",
+                share_link_desc: "যাদের সাথে মিটিং করতে চান, তাদের সাথে নিচের লিঙ্কটি শেয়ার করুন। এই সুরক্ষিত রুমে ২০ জন পর্যন্ত যোগ দিতে পারবেন।",
+                click_to_copy: "লিঙ্ক কপি করতে ক্লিক করুন",
+                you_label: "আপনি",
+                chat_title: "চ্যাট",
+                secure_chat_welcome: "সুরক্ষিত চ্যাটে স্বাগতম।<br>বার্তাগুলো এন্ড-টু-এন্ড এনক্রিপ্টেড এবং কল শেষ হলে মুছে যাবে।",
+                chat_placeholder: "একটি বার্তা লিখুন...",
+                meeting_host: "মিটিং হোস্ট",
+                participant: "অংশগ্রহণকারী",
+                in_call: "কলে আছেন",
+                allow_cam_mic: "দয়া করে ক্যামেরা/মাইক্রোফোনের অনুমতি দিন।",
+                generating_link: "মিটিং লিঙ্ক তৈরি হচ্ছে...",
+                enter_id_link: "দয়া করে একটি রুম আইডি বা লিঙ্ক দিন",
+                connecting_meeting: "মিটিংয়ে সংযুক্ত হচ্ছে...",
+                joining: "যোগ দিচ্ছে...",
+                connecting: "সংযুক্ত হচ্ছে...",
+                joined_room: "রুমে যোগ দিয়েছেন।",
+                left_room: "রুম থেকে বিদায় নিয়েছেন।",
+                meeting_not_found: "মিটিং খুঁজে পাওয়া যায়নি। হোস্ট হয়তো মিটিং শেষ করেছেন।",
+                conn_error: "সংযোগ ত্রুটি ঘটেছে।",
+                camera_off: "ক্যামেরা বন্ধ",
+                camera_unavailable: "ক্যামেরা পাওয়া যাচ্ছে না",
+                share_screen_prompt: "কেউ যোগ দিলে আপনার স্ক্রিন শেয়ার করুন!",
+                wait_for_chat: "চ্যাট করার জন্য কেউ যোগ দেওয়া পর্যন্ত অপেক্ষা করুন।",
+                no_mic: "কোনো ফিজিক্যাল মাইক্রোফোন সংযুক্ত নেই।",
+                no_cam: "কোনো ফিজিক্যাল ক্যামেরা সংযুক্ত নেই।",
+                mic_not_found: "কোনো মাইক্রোফোন পাওয়া যায়নি।",
+                cam_not_found: "কোনো ক্যামেরা পাওয়া যায়নি।",
+                left_meeting: "আপনি মিটিং থেকে বের হয়ে গেছেন।",
+                link_copied: "মিটিং লিঙ্ক ক্লিপবোর্ডে কপি করা হয়েছে!",
+                link_copy_failed: "লিঙ্ক কপি করতে ব্যর্থ হয়েছে।",
+                guest: "অতিথি"
+            }
+        };
+        
+        let currentLang = 'en';
+
+        function t(key) {
+            return i18n[currentLang][key] || key;
+        }
+
+        function updateLanguage() {
+            // Update simple text tags
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (i18n[currentLang][key]) {
+                    el.innerHTML = i18n[currentLang][key];
+                }
+            });
+            
+            // Update placeholders
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                const key = el.getAttribute('data-i18n-placeholder');
+                if (i18n[currentLang][key]) {
+                    el.placeholder = i18n[currentLang][key];
+                }
+            });
+            
+            // Update titles (tooltips)
+            document.querySelectorAll('[data-i18n-title]').forEach(el => {
+                const key = el.getAttribute('data-i18n-title');
+                if (i18n[currentLang][key]) {
+                    el.title = i18n[currentLang][key];
+                }
+            });
+
+            // Update toggle button text
+            document.getElementById('lang-toggle-text').innerText = currentLang === 'en' ? 'বাংলা' : 'English';
+
+            // Refresh UI components that use translated strings dynamically
+            if (activeRoomId) {
+                updateParticipantsList();
+                if (activeSidebar === 'participants') {
+                    const totalCount = Object.keys(peers).length + 1;
+                    ui.sidebarTitle.innerText = `${t('in_call')} (${totalCount})`;
+                } else if (activeSidebar === 'chat') {
+                    ui.sidebarTitle.innerText = t('chat_title');
+                }
+            }
+        }
+
+        function toggleLanguage() {
+            currentLang = currentLang === 'en' ? 'bn' : 'en';
+            updateLanguage();
+        }
+
         // --- Core State Variables ---
         let peer = null;
         let localStream = null;
         
         let isMicMuted = false;
         let isCamOff = false;
-        let activeRoomId = ''; // This defines the host's ID
+        let activeRoomId = ''; 
         let isDummyStream = false;
         let isScreenSharing = false;
         let screenStream = null;
         
-        let activeSidebar = null; // 'chat' or 'participants'
+        let activeSidebar = null; 
         let unreadMessages = 0;
 
-        let localUserName = 'Guest';
+        let localUserName = '';
 
-        // MESH NETWORK STATE: Manage up to 20 connections
-        // structure: peers[peerId] = { name, call, data, stream }
+        // MESH NETWORK STATE
         const peers = {};
 
         // --- DOM Elements ---
@@ -373,12 +524,18 @@
             userNameInput: document.getElementById('user-name-input')
         };
 
-        // --- URL Parameter Parsing (Join via Link) ---
+        // --- URL Parameter Parsing ---
         function checkUrlParams() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const roomToJoin = urlParams.get('room');
-            if (roomToJoin) {
-                document.getElementById('join-id-input').value = roomToJoin;
+            try {
+                if (window.location.protocol !== 'blob:') {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const roomToJoin = urlParams.get('room');
+                    if (roomToJoin) {
+                        document.getElementById('join-id-input').value = roomToJoin;
+                    }
+                }
+            } catch (e) {
+                console.warn("URL parameter check kora jayni", e);
             }
         }
 
@@ -396,7 +553,7 @@
                 ctx.fillStyle = '#64748b'; // slate-500
                 ctx.font = '600 24px "Plus Jakarta Sans"';
                 ctx.textAlign = 'center';
-                ctx.fillText('Camera Off', canvas.width/2, canvas.height/2);
+                ctx.fillText(t('camera_off'), canvas.width/2, canvas.height/2);
                 
                 const time = Date.now() / 1000;
                 const x = canvas.width/2 + Math.sin(time) * 50;
@@ -425,11 +582,12 @@
         }
 
         async function initializeMedia() {
+            updateLanguage(); // Set initial language
             checkUrlParams(); 
 
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
                 console.warn("Media devices API not available.");
-                showToast("Browser does not support media devices. Using fallback.");
+                showToast(t('cam_not_found'));
                 setupDummyStreamFallback();
             } else {
                 try {
@@ -468,7 +626,7 @@
                 updateVideoUI();
                 updateMicUI();
             } catch (e) {
-                ui.previewOverlay.innerHTML = '<div class="w-10 h-10 sm:w-14 sm:h-14 bg-rose-500/20 rounded-full flex items-center justify-center mb-3 sm:mb-4"><i class="fas fa-video-slash text-xl sm:text-2xl text-rose-400"></i></div><span class="text-[10px] sm:text-xs font-bold tracking-wider uppercase text-rose-200">Camera Unavailable</span>';
+                ui.previewOverlay.innerHTML = `<div class="w-10 h-10 sm:w-14 sm:h-14 bg-rose-500/20 rounded-full flex items-center justify-center mb-3 sm:mb-4"><i class="fas fa-video-slash text-xl sm:text-2xl text-rose-400"></i></div><span class="text-[10px] sm:text-xs font-bold tracking-wider uppercase text-rose-200">${t('camera_unavailable')}</span>`;
             }
         }
 
@@ -487,13 +645,13 @@
 
         function createRoom() {
             if (!localStream) {
-                showToast("Please allow camera/microphone access first.");
+                showToast(t('allow_cam_mic'));
                 return;
             }
 
-            localUserName = ui.userNameInput.value.trim() || 'Host';
+            localUserName = ui.userNameInput.value.trim() || t('meeting_host');
             switchScreen('call');
-            showToast("Generating Meeting Link...");
+            showToast(t('generating_link'));
 
             peer = initPeer();
 
@@ -516,15 +674,15 @@
         function joinRoom() {
             let inputId = document.getElementById('join-id-input').value.trim();
             if (!inputId) {
-                showToast("Please enter a Room ID or Link");
+                showToast(t('enter_id_link'));
                 return;
             }
             if (!localStream) {
-                showToast("Please allow camera/microphone access first.");
+                showToast(t('allow_cam_mic'));
                 return;
             }
 
-            localUserName = ui.userNameInput.value.trim() || 'Guest';
+            localUserName = ui.userNameInput.value.trim() || t('guest');
 
             if (inputId.includes('?room=')) {
                 inputId = inputId.split('?room=')[1].split('&')[0];
@@ -534,7 +692,7 @@
             switchScreen('call');
             ui.roomInfo.classList.add('hidden'); 
             ui.waitingMessage.classList.add('hidden');
-            showToast("Connecting to meeting...");
+            showToast(t('connecting_meeting'));
 
             peer = initPeer();
 
@@ -548,7 +706,7 @@
 
         function setupPeerListeners() {
             peer.on('call', (call) => {
-                if (!peers[call.peer]) peers[call.peer] = { name: 'Joining...' };
+                if (!peers[call.peer]) peers[call.peer] = { name: t('joining') };
                 peers[call.peer].call = call;
                 
                 call.answer(localStream);
@@ -558,7 +716,7 @@
             });
 
             peer.on('connection', (conn) => {
-                if (!peers[conn.peer]) peers[conn.peer] = { name: 'Joining...' };
+                if (!peers[conn.peer]) peers[conn.peer] = { name: t('joining') };
                 peers[conn.peer].data = conn;
                 
                 setupDataConnEvents(conn);
@@ -568,7 +726,7 @@
         function initiateConnection(targetPeerId) {
             if (peers[targetPeerId]) return; 
             
-            peers[targetPeerId] = { name: 'Connecting...' };
+            peers[targetPeerId] = { name: t('connecting') };
             
             const call = peer.call(targetPeerId, localStream);
             peers[targetPeerId].call = call;
@@ -604,7 +762,7 @@
                         peers[conn.peer].name = data.name;
                         updateParticipantsList();
                         updateVideoLabel(conn.peer, data.name);
-                        appendMessage(`${data.name} has joined the room.`, 'system');
+                        appendMessage(`${data.name} ${t('joined_room')}`, 'system');
                     }
 
                     if (peer.id === activeRoomId) {
@@ -622,7 +780,7 @@
                     });
                 } 
                 else if (data.type === 'chat') {
-                    const senderName = peers[conn.peer]?.name || 'Guest';
+                    const senderName = peers[conn.peer]?.name || t('guest');
                     appendMessage(data.text, 'them', senderName);
                     if (activeSidebar !== 'chat') {
                         unreadMessages++;
@@ -644,11 +802,11 @@
                 console.error("Peer error:", err);
                 if (err.type === 'peer-unavailable') {
                     if (Object.keys(peers).length === 0) {
-                        showToast("Meeting not found. The host may have ended it.");
+                        showToast(t('meeting_not_found'));
                         endCall();
                     }
                 } else {
-                    showToast("Connection error occurred.");
+                    showToast(t('conn_error'));
                 }
             });
         }
@@ -683,7 +841,7 @@
             const nameLabel = document.createElement('div');
             nameLabel.id = `label-${peerId}`;
             nameLabel.className = 'absolute bottom-3 left-3 sm:bottom-4 sm:left-4 glass-panel-dark px-3 py-1 sm:px-4 sm:py-1.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-semibold text-white tracking-wide shadow-lg z-10 border border-white/10 backdrop-blur-md max-w-[80%] truncate';
-            nameLabel.innerText = peers[peerId]?.name || 'Connecting...';
+            nameLabel.innerText = peers[peerId]?.name || t('connecting');
             
             container.appendChild(video);
             container.appendChild(overlay);
@@ -700,10 +858,10 @@
 
         function removePeer(peerId) {
             if (peers[peerId]) {
-                const name = peers[peerId].name || 'Someone';
+                const name = peers[peerId].name || t('guest');
                 if (peers[peerId].call) peers[peerId].call.close();
                 if (peers[peerId].data) peers[peerId].data.close();
-                appendMessage(`${name} left the room.`, 'system');
+                appendMessage(`${name} ${t('left_room')}`, 'system');
                 delete peers[peerId];
             }
             
@@ -751,7 +909,7 @@
         // --- Screen Sharing ---
         async function toggleScreenShare() {
             if (Object.keys(peers).length === 0) {
-                showToast("Share your screen when someone joins!");
+                showToast(t('share_screen_prompt'));
                 return;
             }
 
@@ -822,7 +980,7 @@
                 appendMessage(text, 'me', localUserName);
                 ui.chatInput.value = '';
             } else {
-                showToast("Wait for someone to join before chatting.");
+                showToast(t('wait_for_chat'));
             }
         }
 
@@ -838,7 +996,7 @@
                 
                 const nameLabel = document.createElement('div');
                 nameLabel.className = 'text-[9px] sm:text-[10px] font-semibold text-slate-400 mb-1.5 px-1 uppercase tracking-wider';
-                nameLabel.innerText = isMe ? 'You' : senderName;
+                nameLabel.innerText = isMe ? t('you_label') : senderName;
 
                 const bubble = document.createElement('div');
                 bubble.className = `max-w-[90%] px-3.5 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm text-white shadow-lg ${isMe ? 'chat-bubble-me rounded-2xl rounded-tr-sm' : 'chat-bubble-them rounded-2xl rounded-tl-sm backdrop-blur-md'}`;
@@ -872,7 +1030,7 @@
             activeSidebar = panel;
 
             if (panel === 'chat') {
-                ui.sidebarTitle.innerText = 'Meeting Chat';
+                ui.sidebarTitle.innerText = t('chat_title');
                 ui.chatContent.classList.remove('hidden');
                 ui.participantsContent.classList.add('hidden');
                 
@@ -882,7 +1040,8 @@
                 ui.chatMessages.scrollTop = ui.chatMessages.scrollHeight;
                 setTimeout(() => ui.chatInput.focus(), 300);
             } else if (panel === 'participants') {
-                ui.sidebarTitle.innerText = `In Call (${Object.keys(peers).length + 1})`;
+                const totalCount = Object.keys(peers).length + 1;
+                ui.sidebarTitle.innerText = `${t('in_call')} (${totalCount})`;
                 ui.participantsContent.classList.remove('hidden');
                 ui.chatContent.classList.add('hidden');
             }
@@ -907,11 +1066,11 @@
                 <div class="flex items-center justify-between p-3 sm:p-3.5 rounded-xl sm:rounded-2xl bg-white/10 border border-white/10 shadow-sm backdrop-blur-md transition-all hover:bg-white/15">
                     <div class="flex items-center gap-3 sm:gap-4 truncate">
                         <div class="w-9 h-9 sm:w-11 sm:h-11 shrink-0 rounded-lg sm:rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 text-white flex items-center justify-center font-bold text-base sm:text-lg shadow-inner">
-                            ${localUserName.charAt(0).toUpperCase()}
+                            ${localUserName ? localUserName.charAt(0).toUpperCase() : 'U'}
                         </div>
                         <div class="flex flex-col truncate">
-                            <span class="text-white font-semibold text-xs sm:text-sm truncate">${localUserName} (You)</span>
-                            <span class="text-indigo-300 text-[9px] sm:text-[10px] uppercase tracking-wider font-bold">${isHost ? 'Meeting Host' : 'Participant'}</span>
+                            <span class="text-white font-semibold text-xs sm:text-sm truncate">${localUserName} (${t('you_label')})</span>
+                            <span class="text-indigo-300 text-[9px] sm:text-[10px] uppercase tracking-wider font-bold">${isHost ? t('meeting_host') : t('participant')}</span>
                         </div>
                     </div>
                     <div class="flex gap-1.5 sm:gap-2 text-slate-400 text-[10px] sm:text-xs bg-black/20 p-1.5 sm:p-2 rounded-lg sm:rounded-xl border border-white/5 shrink-0">
@@ -923,7 +1082,7 @@
 
             Object.keys(peers).forEach(pid => {
                 const p = peers[pid];
-                const pName = p.name || 'Connecting...';
+                const pName = p.name || t('connecting');
                 const isPeerHost = (pid === activeRoomId);
                 
                 html += `
@@ -934,7 +1093,7 @@
                             </div>
                             <div class="flex flex-col truncate pr-2">
                                 <span class="text-white font-semibold text-xs sm:text-sm truncate">${pName}</span>
-                                <span class="text-slate-400 text-[9px] sm:text-[10px] uppercase tracking-wider font-bold">${isPeerHost ? 'Meeting Host' : 'Participant'}</span>
+                                <span class="text-slate-400 text-[9px] sm:text-[10px] uppercase tracking-wider font-bold">${isPeerHost ? t('meeting_host') : t('participant')}</span>
                             </div>
                         </div>
                         <div class="flex gap-1.5 sm:gap-2 text-emerald-400 text-[10px] sm:text-xs bg-emerald-500/10 p-1.5 sm:p-2 rounded-lg sm:rounded-xl border border-emerald-500/20 shrink-0">
@@ -954,7 +1113,7 @@
             }
 
             if (activeSidebar === 'participants') {
-                ui.sidebarTitle.innerText = `In Call (${totalCount})`;
+                ui.sidebarTitle.innerText = `${t('in_call')} (${totalCount})`;
             }
         }
 
@@ -998,7 +1157,7 @@
 
         function toggleMic() {
             if (!localStream) return;
-            if (isDummyStream) { showToast("No physical microphone connected."); return; }
+            if (isDummyStream) { showToast(t('no_mic')); return; }
             
             const audioTracks = localStream.getAudioTracks();
             if (audioTracks.length > 0) {
@@ -1006,13 +1165,13 @@
                 audioTracks[0].enabled = !isMicMuted;
                 updateMicUI();
             } else {
-                showToast("No microphone available.");
+                showToast(t('mic_not_found'));
             }
         }
 
         function toggleVideo() {
             if (!localStream) return;
-            if (isDummyStream) { showToast("No physical camera connected."); return; }
+            if (isDummyStream) { showToast(t('no_cam')); return; }
             
             const videoTracks = localStream.getVideoTracks();
             if (videoTracks.length > 0) {
@@ -1020,7 +1179,7 @@
                 videoTracks[0].enabled = !isCamOff;
                 updateVideoUI();
             } else {
-                showToast("No camera available.");
+                showToast(t('cam_not_found'));
             }
         }
 
@@ -1049,17 +1208,23 @@
             ui.chatMessages.innerHTML = `
                 <div class="text-center bg-white/5 rounded-2xl py-3 px-4 mx-auto border border-white/5">
                     <i class="fas fa-lock text-indigo-400 mb-2 text-base sm:text-lg"></i>
-                    <p class="text-[10px] sm:text-[11px] text-slate-400 font-medium leading-relaxed">Welcome to secure chat.<br>Messages are end-to-end encrypted and disappear when the call ends.</p>
+                    <p class="text-[10px] sm:text-[11px] text-slate-400 font-medium leading-relaxed" data-i18n="secure_chat_welcome">${t('secure_chat_welcome')}</p>
                 </div>
             `;
             ui.chatInput.disabled = true;
             ui.chatSubmit.disabled = true;
             
-            window.history.replaceState({}, document.title, window.location.pathname);
+            try {
+                if (window.location.protocol !== 'blob:') {
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                }
+            } catch (e) {
+                console.warn("Sandbox er karone URL history update kora jayni.", e);
+            }
             
             document.getElementById('join-id-input').value = '';
             switchScreen('setup');
-            showToast("You left the meeting.");
+            showToast(t('left_meeting'));
         }
 
         // --- Utility Functions ---
@@ -1080,9 +1245,16 @@
         }
 
         function getRoomLink(id) {
-            const url = new URL(window.location.href);
-            url.searchParams.set('room', id);
-            return url.toString();
+            try {
+                if (window.location.protocol === 'blob:') {
+                    return id; 
+                }
+                const url = new URL(window.location.href);
+                url.searchParams.set('room', id);
+                return url.toString();
+            } catch (e) {
+                return id;
+            }
         }
 
         function copyRoomLink() {
@@ -1096,9 +1268,9 @@
             
             try {
                 document.execCommand("copy");
-                showToast("Meeting Link copied to clipboard!");
+                showToast(t('link_copied'));
             } catch (err) {
-                showToast("Failed to copy link.");
+                showToast(t('link_copy_failed'));
             }
             
             document.body.removeChild(tempInput);
