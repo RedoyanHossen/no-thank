@@ -114,6 +114,14 @@
             </div>
 
             <div class="space-y-5">
+                <!-- User Name Input -->
+                <div class="relative w-full">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fas fa-user text-gray-400"></i>
+                    </div>
+                    <input type="text" id="user-name-input" placeholder="Tomar Nam (Your Name)" class="w-full bg-white/50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 block pl-10 p-3.5 outline-none transition-all placeholder-gray-400 shadow-sm">
+                </div>
+
                 <button onclick="createRoom()" class="w-full bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white font-bold py-3.5 px-4 rounded-xl transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg hover:shadow-indigo-500/30 flex items-center justify-center gap-3">
                     <i class="fas fa-video"></i> Start New Meeting
                 </button>
@@ -314,6 +322,9 @@
         let unreadMessages = 0;
         let remotePeerId = null;
 
+        let localUserName = 'Guest';
+        let remoteUserName = 'Guest';
+
         // --- DOM Elements ---
         const screens = {
             setup: document.getElementById('setup-screen'),
@@ -345,7 +356,8 @@
             chatSubmit: document.getElementById('chat-submit'),
             chatBadge: document.getElementById('chat-badge'),
             participantsBadge: document.getElementById('participants-badge'),
-            participantsList: document.getElementById('participants-list')
+            participantsList: document.getElementById('participants-list'),
+            userNameInput: document.getElementById('user-name-input')
         };
 
         // --- URL Parameter Parsing (Join via Link) ---
@@ -466,6 +478,8 @@
                 return;
             }
 
+            localUserName = ui.userNameInput.value.trim() || 'Host';
+
             switchScreen('call');
             showToast("Generating Meeting Link...");
 
@@ -513,6 +527,8 @@
                 showToast("Please allow camera/microphone access first.");
                 return;
             }
+
+            localUserName = ui.userNameInput.value.trim() || 'Guest';
 
             // Extract ID if a full URL was pasted
             if (inputId.includes('?room=')) {
@@ -634,22 +650,29 @@
 
             chatConnection.on('open', () => {
                 console.log('Chat connection opened');
+                // Send handshake to share user name
+                chatConnection.send({ type: 'handshake', name: localUserName });
             });
 
             chatConnection.on('data', (data) => {
-                appendMessage(data.text, 'them');
-                if (activeSidebar !== 'chat') {
-                    unreadMessages++;
-                    ui.chatBadge.innerText = unreadMessages > 9 ? '9+' : unreadMessages;
-                    ui.chatBadge.classList.remove('hidden');
-                    // Play a soft notification sound (optional, omitted for simplicity to ensure cross-browser without interaction issues)
+                if (data.type === 'handshake') {
+                    remoteUserName = data.name || 'Guest Participant';
+                    updateParticipantsList(activeRoomId !== '', remotePeerId);
+                    appendMessage(`System: ${remoteUserName} has joined the meeting.`, 'system');
+                } else if (data.type === 'chat') {
+                    appendMessage(data.text, 'them', remoteUserName);
+                    if (activeSidebar !== 'chat') {
+                        unreadMessages++;
+                        ui.chatBadge.innerText = unreadMessages > 9 ? '9+' : unreadMessages;
+                        ui.chatBadge.classList.remove('hidden');
+                    }
                 }
             });
 
             chatConnection.on('close', () => {
                 ui.chatInput.disabled = true;
                 ui.chatSubmit.disabled = true;
-                appendMessage("System: The other user has disconnected.", 'system');
+                appendMessage(`System: ${remoteUserName} has disconnected.`, 'system');
             });
         }
 
@@ -664,14 +687,14 @@
             if (!text) return;
 
             // Send via PeerJS
-            chatConnection.send({ text: text });
+            chatConnection.send({ type: 'chat', text: text });
             
             // Show locally
-            appendMessage(text, 'me');
+            appendMessage(text, 'me', localUserName);
             ui.chatInput.value = '';
         }
 
-        function appendMessage(text, sender) {
+        function appendMessage(text, sender, senderName = '') {
             const msgDiv = document.createElement('div');
             
             if (sender === 'system') {
@@ -681,6 +704,10 @@
                 const isMe = sender === 'me';
                 msgDiv.className = `flex flex-col ${isMe ? 'items-end' : 'items-start'} mb-4`;
                 
+                const nameLabel = document.createElement('div');
+                nameLabel.className = 'text-[10px] text-gray-400 mb-1 px-1';
+                nameLabel.innerText = isMe ? 'You' : senderName;
+
                 const bubble = document.createElement('div');
                 bubble.className = `max-w-[85%] px-4 py-2 text-sm text-white shadow-md ${isMe ? 'chat-bubble-me rounded-t-2xl rounded-bl-2xl' : 'chat-bubble-them rounded-t-2xl rounded-br-2xl'}`;
                 bubble.innerText = text;
@@ -689,6 +716,7 @@
                 time.className = 'text-[10px] text-gray-500 mt-1 px-1';
                 time.innerText = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
+                msgDiv.appendChild(nameLabel);
                 msgDiv.appendChild(bubble);
                 msgDiv.appendChild(time);
             }
@@ -747,8 +775,8 @@
             let html = `
                 <div class="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5">
                     <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold">You</div>
-                        <span class="text-white font-medium text-sm">You ${isHost ? '(Host)' : ''}</span>
+                        <div class="w-10 h-10 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold">${localUserName.charAt(0).toUpperCase()}</div>
+                        <span class="text-white font-medium text-sm">${localUserName} (You)</span>
                     </div>
                     <div class="flex gap-2 text-gray-400 text-xs">
                         <i class="fas ${isMicMuted ? 'fa-microphone-slash text-red-400' : 'fa-microphone'}"></i>
@@ -764,8 +792,8 @@
                 html += `
                     <div class="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5 mt-2">
                         <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-full bg-gray-700 text-gray-300 flex items-center justify-center font-bold"><i class="fas fa-user"></i></div>
-                            <span class="text-white font-medium text-sm">Guest Participant</span>
+                            <div class="w-10 h-10 rounded-full bg-gray-700 text-gray-300 flex items-center justify-center font-bold">${remoteUserName.charAt(0).toUpperCase()}</div>
+                            <span class="text-white font-medium text-sm">${remoteUserName}</span>
                         </div>
                         <div class="flex gap-2 text-green-400 text-xs">
                             <i class="fas fa-link" title="Connected"></i>
@@ -872,6 +900,7 @@
             }
             
             remotePeerId = null;
+            remoteUserName = 'Guest';
             resetRemoteVideo();
             closeSidebar();
             
