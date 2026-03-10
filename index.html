@@ -6,7 +6,7 @@
     <title>Meet Clone - WebRTC Video Chat</title>
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- GitHub e host korar jonno local er bodole Socket.io CDN use kora holo -->
+    <!-- Socket.io CDN -->
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     
     <style>
@@ -14,19 +14,16 @@
         
         body { 
             font-family: 'Inter', sans-serif; 
-            background-color: #0f172a; /* Slate 900 */
+            background-color: #0f172a; 
             color: white; 
             margin: 0; 
             overflow: hidden; 
         }
         
-        /* Custom Scrollbar for Chat & Participants */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
 
-        /* Video Grid Layout */
         #video-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
@@ -34,11 +31,10 @@
             width: 100%;
             height: 100%;
             padding: 1rem;
-            padding-bottom: 100px; /* Space for floating controls */
+            padding-bottom: 100px;
             align-content: center;
             justify-content: center;
             overflow-y: auto;
-            transition: all 0.3s ease;
         }
 
         .video-wrapper {
@@ -61,16 +57,15 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
-            transform: scaleX(-1); /* Mirror local video visually by default */
+            transform: scaleX(-1);
         }
         
         video.screen-share {
-            transform: scaleX(1) !important; /* Never mirror screen sharing */
+            transform: scaleX(1) !important;
             object-fit: contain;
             background-color: #000;
         }
 
-        /* User Badge on Video */
         .user-badge {
             position: absolute;
             bottom: 1rem;
@@ -84,17 +79,9 @@
             border: 1px solid rgba(255,255,255,0.1);
         }
 
-        /* Sidebar Animations */
-        #sidebar {
-            transition: transform 0.3s ease-in-out, width 0.3s;
-        }
-        .sidebar-closed {
-            transform: translateX(100%);
-            width: 0 !important;
-            border: none !important;
-        }
+        #sidebar { transition: transform 0.3s ease-in-out, width 0.3s; }
+        .sidebar-closed { transform: translateX(100%); width: 0 !important; border: none !important; }
 
-        /* Control Bar styling */
         .control-btn {
             display: flex;
             align-items: center;
@@ -108,26 +95,39 @@
         .control-btn:hover { background-color: #475569; transform: translateY(-2px); }
         .control-btn.active { background-color: #2563eb; color: white; }
         .control-btn.danger { background-color: #ef4444; color: white; }
-        .control-btn.danger:hover { background-color: #dc2626; }
 
         .hidden { display: none !important; }
+
+        #status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #ef4444;
+            display: inline-block;
+            margin-right: 6px;
+        }
+        #status-dot.connected { background-color: #10b981; }
+        #status-dot.warning { background-color: #f59e0b; }
     </style>
 </head>
 <body class="flex flex-col h-screen w-screen relative">
 
-    <!-- Landing / Join Screen -->
+    <!-- Landing Screen -->
     <div id="join-screen" class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-slate-900 px-4">
         <div class="bg-slate-800 p-8 rounded-3xl shadow-2xl max-w-md w-full text-center border border-slate-700 relative overflow-hidden">
-            <!-- Decorative background glow -->
             <div class="absolute -top-20 -left-20 w-40 h-40 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
             
             <div class="relative z-10">
                 <div class="bg-blue-500/10 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6">
                     <svg class="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
                 </div>
-                <h1 class="text-3xl font-bold mb-2">Video Meetings</h1>
-                <p class="text-slate-400 mb-8 text-sm">Secure, high-quality peer-to-peer video meetings.</p>
+                <h1 class="text-3xl font-bold mb-2 text-white">Video Meetings</h1>
+                <p class="text-slate-400 mb-6 text-sm">Secure, high-quality peer-to-peer video meetings.</p>
                 
+                <div id="connection-status" class="mb-6 text-xs font-medium text-slate-500 bg-slate-900/50 py-2 px-4 rounded-full border border-slate-700">
+                    <span id="status-dot"></span> <span id="status-text">Checking server configuration...</span>
+                </div>
+
                 <button id="create-room-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-xl transition duration-200 mb-6 flex items-center justify-center gap-2 shadow-lg shadow-blue-500/30">
                     Create New Meeting
                 </button>
@@ -139,609 +139,348 @@
                 </div>
 
                 <div class="flex flex-col gap-3">
-                    <input type="text" id="room-id-input" placeholder="Enter Meeting ID or Link" class="w-full bg-slate-900 border border-slate-600 text-white rounded-xl py-3 px-4 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition text-center font-mono">
+                    <input type="text" id="room-id-input" placeholder="Enter Meeting ID or Link" class="w-full bg-slate-900 border border-slate-600 text-white rounded-xl py-3 px-4 focus:outline-none focus:border-blue-500 transition text-center font-mono">
                     <button id="join-room-btn" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 px-4 rounded-xl transition duration-200">
                         Join Meeting
                     </button>
                 </div>
+                
+                <p class="mt-6 text-[10px] text-slate-500" id="hint-text">
+                    Mone rakhben: Backend URL update chara meeting start hobe na.
+                </p>
             </div>
         </div>
     </div>
 
-    <!-- Active Call Screen (Flex Container) -->
+    <!-- Call Screen -->
     <div id="call-screen" class="hidden flex-1 h-full w-full relative flex-row bg-slate-950">
-        
-        <!-- Left Side: Video Area -->
         <div class="flex-1 flex flex-col relative h-full">
-            <!-- Header Info -->
             <div class="absolute top-4 left-4 z-10 flex gap-2">
                 <div class="bg-slate-800/80 backdrop-blur-md border border-slate-700 px-4 py-2 rounded-xl flex items-center gap-3 shadow-lg">
                     <span class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Room</span>
                     <span id="display-room-id" class="font-mono font-bold text-white tracking-wider">---</span>
-                    <button id="copy-btn" class="text-slate-400 hover:text-white transition bg-slate-700/50 p-1.5 rounded-lg" title="Copy Meeting Link">
+                    <button id="copy-btn" class="text-slate-400 hover:text-white transition bg-slate-700/50 p-1.5 rounded-lg" title="Copy Link">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
                     </button>
                 </div>
-                <div id="toast-notification" class="hidden bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-4 py-2 rounded-xl items-center shadow-lg backdrop-blur-md transition-opacity duration-300">
-                    <span class="text-sm font-medium" id="toast-msg">Copied to clipboard!</span>
+                <div id="toast-notification" class="hidden bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-4 py-2 rounded-xl items-center shadow-lg backdrop-blur-md">
+                    <span class="text-sm font-medium" id="toast-msg">Copied!</span>
                 </div>
             </div>
 
-            <!-- Video Grid -->
             <div id="video-grid"></div>
 
-            <!-- Floating Bottom Controls -->
             <div class="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-20">
                 <div class="bg-slate-800/90 backdrop-blur-lg border border-slate-700/50 px-6 py-3 rounded-2xl flex items-center gap-4 shadow-2xl">
-                    
-                    <!-- Mic -->
-                    <button id="mic-toggle" class="control-btn" title="Toggle Microphone">
-                        <svg id="mic-on-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
-                        <svg id="mic-off-icon" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z m7.414-8l2 2m0 0l2-2m-2 2l2 2m-2-2l-2 2"></path></svg>
-                    </button>
-
-                    <!-- Camera -->
-                    <button id="cam-toggle" class="control-btn" title="Toggle Camera">
-                        <svg id="cam-on-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-                        <svg id="cam-off-icon" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path></svg>
-                    </button>
-
-                    <!-- Screen Share -->
-                    <button id="share-toggle" class="control-btn" title="Share Screen">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
-                    </button>
-
-                    <div class="w-px h-8 bg-slate-600 mx-2"></div> <!-- Divider -->
-
-                    <!-- Participants -->
-                    <button id="people-toggle" class="control-btn" title="Participants">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-                        <span id="people-count-badge" class="absolute -top-1 -right-1 bg-blue-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">1</span>
-                    </button>
-
-                    <!-- Chat -->
-                    <button id="chat-toggle" class="control-btn relative" title="Chat">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
-                        <span id="chat-badge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">!</span>
-                    </button>
-
-                    <div class="w-px h-8 bg-slate-600 mx-2"></div> <!-- Divider -->
-
-                    <!-- Leave -->
-                    <button id="leave-btn" class="control-btn danger px-8 w-auto rounded-xl gap-2 font-medium" title="Leave Meeting">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
-                        Leave
-                    </button>
+                    <button id="mic-toggle" class="control-btn"><svg id="mic-on-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg><svg id="mic-off-icon" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z m7.414-8l2 2m0 0l2-2m-2 2l2 2m-2-2l-2 2"></path></svg></button>
+                    <button id="cam-toggle" class="control-btn"><svg id="cam-on-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg><svg id="cam-off-icon" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268-2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path></svg></button>
+                    <button id="share-toggle" class="control-btn" title="Share Screen"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg></button>
+                    <div class="w-px h-8 bg-slate-600 mx-2"></div>
+                    <button id="people-toggle" class="control-btn relative"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg><span id="people-count-badge" class="absolute -top-1 -right-1 bg-blue-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">1</span></button>
+                    <button id="chat-toggle" class="control-btn relative"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg><span id="chat-badge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">!</span></button>
+                    <div class="w-px h-8 bg-slate-600 mx-2"></div>
+                    <button id="leave-btn" class="control-btn danger px-8 w-auto rounded-xl gap-2 font-medium"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>Leave</button>
                 </div>
             </div>
         </div>
 
-        <!-- Right Side: Sidebar (Chat & Participants) -->
         <div id="sidebar" class="sidebar-closed w-80 bg-slate-900 border-l border-slate-800 flex flex-col h-full z-30 shrink-0">
-            
-            <!-- Sidebar Header Tabs -->
             <div class="flex border-b border-slate-800">
-                <button id="tab-chat" class="flex-1 py-4 text-sm font-semibold text-blue-500 border-b-2 border-blue-500 transition">Chat</button>
-                <button id="tab-people" class="flex-1 py-4 text-sm font-semibold text-slate-400 border-b-2 border-transparent hover:text-slate-300 transition">People</button>
-                <button id="close-sidebar" class="p-4 text-slate-400 hover:text-white">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
+                <button id="tab-chat" class="flex-1 py-4 text-sm font-semibold text-blue-500 border-b-2 border-blue-500">Chat</button>
+                <button id="tab-people" class="flex-1 py-4 text-sm font-semibold text-slate-400 border-b-2 border-transparent">People</button>
+                <button id="close-sidebar" class="p-4 text-slate-400 hover:text-white"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
             </div>
-
-            <!-- Chat View -->
             <div id="view-chat" class="flex-1 flex flex-col h-full overflow-hidden">
-                <div id="chat-messages" class="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
-                    <div class="text-xs text-center text-slate-500 my-2">Messages are end-to-end encrypted via WebRTC.</div>
-                    <!-- Messages go here -->
-                </div>
+                <div id="chat-messages" class="flex-1 overflow-y-auto p-4 flex flex-col gap-3"></div>
                 <div class="p-3 bg-slate-800/50 border-t border-slate-800">
                     <form id="chat-form" class="flex gap-2 relative">
                         <input type="text" id="chat-input" placeholder="Send a message..." class="flex-1 bg-slate-900 border border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-blue-500" autocomplete="off">
-                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white rounded-lg p-2 transition">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
-                        </button>
+                        <button type="submit" class="bg-blue-600 text-white rounded-lg p-2"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg></button>
                     </form>
                 </div>
             </div>
-
-            <!-- Participants View -->
             <div id="view-people" class="hidden flex-1 flex flex-col h-full overflow-hidden p-4">
                 <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">In this meeting</h3>
-                <ul id="people-list" class="flex flex-col gap-2 overflow-y-auto">
-                    <!-- Default Local User -->
-                    <li class="flex items-center gap-3 p-2 bg-slate-800 rounded-lg">
-                        <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-sm font-bold">ME</div>
-                        <span class="text-sm font-medium">You</span>
-                    </li>
+                <ul id="people-list" class="flex flex-col gap-2">
+                    <li class="flex items-center gap-3 p-2 bg-slate-800 rounded-lg"><div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-sm font-bold">ME</div><span class="text-sm font-medium">You</span></li>
                 </ul>
             </div>
         </div>
-
     </div>
 
     <script>
-        // --- DOM Elements ---
-        const joinScreen = document.getElementById('join-screen');
-        const callScreen = document.getElementById('call-screen');
-        const createRoomBtn = document.getElementById('create-room-btn');
-        const joinRoomBtn = document.getElementById('join-room-btn');
-        const roomInput = document.getElementById('room-id-input');
-        const displayRoomId = document.getElementById('display-room-id');
-        const copyBtn = document.getElementById('copy-btn');
-        const toastNotification = document.getElementById('toast-notification');
-        const toastMsg = document.getElementById('toast-msg');
-        const videoGrid = document.getElementById('video-grid');
-        
-        // Controls
-        const micToggle = document.getElementById('mic-toggle');
-        const camToggle = document.getElementById('cam-toggle');
-        const shareToggle = document.getElementById('share-toggle');
-        const leaveBtn = document.getElementById('leave-btn');
-        
-        // Sidebar & Tabs
-        const sidebar = document.getElementById('sidebar');
-        const closeSidebarBtn = document.getElementById('close-sidebar');
-        const chatToggle = document.getElementById('chat-toggle');
-        const peopleToggle = document.getElementById('people-toggle');
-        const tabChat = document.getElementById('tab-chat');
-        const tabPeople = document.getElementById('tab-people');
-        const viewChat = document.getElementById('view-chat');
-        const viewPeople = document.getElementById('view-people');
-        const chatBadge = document.getElementById('chat-badge');
-        const peopleCountBadge = document.getElementById('people-count-badge');
-        
-        // Chat
-        const chatForm = document.getElementById('chat-form');
-        const chatInput = document.getElementById('chat-input');
-        const chatMessages = document.getElementById('chat-messages');
-        const peopleList = document.getElementById('people-list');
-
-        // --- State Variables ---
-        let localStream;
-        let screenStream;
-        let isScreenSharing = false;
-        let socket;
-        let currentRoomId;
-        const peers = {}; // RTCPeerConnections
-        const dataChannels = {}; // WebRTC Data Channels for Chat
-        const connectedUsers = new Set(); // Track user IDs for Participants tab
-        
-        const myVideo = document.createElement('video');
-        myVideo.muted = true; // Prevents echo
+        // --- IMPORTANT CONFIGURATION ---
+        // Step 1: Host 'server.js' on Render.com or Railway.app
+        // Step 2: Paste the URL from Render below (e.g., https://my-app.onrender.com)
+        const BACKEND_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+            ? '/' 
+            : 'https://Amar-Hosted-Backend-URL.onrender.com'; // <--- EI LINE-TI UPDATE KORUN
 
         const rtcConfig = {
             iceServers: [
-                { urls: 'stun:stun.l.google.com:19302' },
-                { urls: 'stun:stun1.l.google.com:19302' }
+                { urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }
             ]
         };
 
-        // --- Initialization & URL Checking ---
+        // --- DOM Elements ---
+        const joinScreen = document.getElementById('join-screen');
+        const callScreen = document.getElementById('call-screen');
+        const statusDot = document.getElementById('status-dot');
+        const statusText = document.getElementById('status-text');
+        const videoGrid = document.getElementById('video-grid');
+        const chatMessages = document.getElementById('chat-messages');
+        const hintText = document.getElementById('hint-text');
+
+        // --- State ---
+        let localStream, socket, currentRoomId, isScreenSharing = false;
+        const peers = {}, dataChannels = {}, connectedUsers = new Set();
+        const myVideo = document.createElement('video');
+        myVideo.muted = true;
+
+        // --- Init ---
         window.onload = () => {
-            try {
-                const urlParams = new URLSearchParams(window.location.search);
-                const roomFromUrl = urlParams.get('room');
-                if (roomFromUrl) {
-                    roomInput.value = roomFromUrl;
-                }
-            } catch(e) {
-                console.warn("URL search params not accessible.");
-            }
+            initSocketConnection();
         };
 
-        function generateRoomId() {
-            const chars = 'abcdefghijklmnopqrstuvwxyz';
-            const randomStr = (length) => Array.from({length}, () => chars[Math.floor(Math.random() * chars.length)]).join('');
-            return `${randomStr(3)}-${randomStr(4)}-${randomStr(3)}`;
-        }
-
-        function showToast(msg, isError = false) {
-            toastMsg.textContent = msg;
-            if(isError) {
-                toastNotification.classList.replace('bg-emerald-500/20', 'bg-red-500/20');
-                toastNotification.classList.replace('text-emerald-400', 'text-red-400');
-                toastNotification.classList.replace('border-emerald-500/30', 'border-red-500/30');
-            } else {
-                toastNotification.classList.replace('bg-red-500/20', 'bg-emerald-500/20');
-                toastNotification.classList.replace('text-red-400', 'text-emerald-400');
-                toastNotification.classList.replace('border-red-500/30', 'border-emerald-500/30');
+        function initSocketConnection() {
+            if (typeof io === 'undefined') {
+                statusText.textContent = "Socket.io CDN load hoyni!";
+                return;
             }
-            toastNotification.classList.remove('hidden');
-            toastNotification.classList.add('flex');
-            setTimeout(() => {
-                toastNotification.classList.add('hidden');
-                toastNotification.classList.remove('flex');
-            }, 3000);
+
+            // Connection Logic
+            socket = io(BACKEND_URL, {
+                transports: ['websocket', 'polling'],
+                reconnection: true,
+                reconnectionAttempts: 10
+            });
+
+            socket.on('connect', () => {
+                statusDot.className = "connected";
+                statusDot.style.backgroundColor = "#10b981";
+                statusText.textContent = "Server connected";
+                statusText.style.color = "#10b981";
+                hintText.textContent = "Meeting start korar jonno niche click korun.";
+            });
+
+            socket.on('connect_error', (err) => {
+                statusDot.className = "";
+                statusDot.style.backgroundColor = "#ef4444";
+                statusText.textContent = "Connection failed - Server offline?";
+                statusText.style.color = "#ef4444";
+                
+                if (BACKEND_URL.includes("Amar-Hosted-Backend-URL")) {
+                    hintText.innerHTML = "<b>Problem:</b> Apni ekhono backend URL update korenni. <br>Code-er 385 number line-ti update korun.";
+                    hintText.style.color = "#ef4444";
+                }
+            });
+
+            setupSocketListeners();
         }
 
-        // --- Step 1: Start Call & Media ---
+        function setupSocketListeners() {
+            if (!socket) return;
+
+            socket.on('user-connected', async (newUserId) => {
+                const pc = createPeerConnection(newUserId);
+                peers[newUserId] = pc;
+                const dc = pc.createDataChannel('chat');
+                setupDataChannel(dc, newUserId);
+                
+                if (localStream) {
+                    localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+                }
+                
+                const offer = await pc.createOffer();
+                await pc.setLocalDescription(offer);
+                socket.emit('offer', { target: newUserId, caller: socket.id, sdp: offer });
+                addParticipantToList(newUserId);
+            });
+
+            socket.on('offer', async (p) => {
+                const pc = createPeerConnection(p.caller);
+                peers[p.caller] = pc;
+                pc.ondatachannel = (e) => setupDataChannel(e.channel, p.caller);
+                
+                if (localStream) {
+                    localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+                }
+                
+                await pc.setRemoteDescription(new RTCSessionDescription(p.sdp));
+                const ans = await pc.createAnswer();
+                await pc.setLocalDescription(ans);
+                socket.emit('answer', { target: p.caller, caller: socket.id, sdp: ans });
+                addParticipantToList(p.caller);
+            });
+
+            socket.on('answer', (p) => peers[p.caller]?.setRemoteDescription(new RTCSessionDescription(p.sdp)));
+            socket.on('ice-candidate', (p) => peers[p.caller]?.addIceCandidate(new RTCIceCandidate(p.candidate)));
+            socket.on('user-disconnected', (id) => {
+                peers[id]?.close(); delete peers[id]; delete dataChannels[id];
+                document.getElementById(`wrapper-${id}`)?.remove();
+                removeParticipantFromList(id);
+            });
+        }
+
         async function startCall(roomId) {
-            currentRoomId = roomId;
-            displayRoomId.textContent = currentRoomId;
-            
-            // Update URL to make it shareable, wrap in try-catch to prevent iframe security errors
-            try {
-                window.history.pushState({}, '', `?room=${currentRoomId}`);
-            } catch (err) {
-                console.warn("URL history pushState blocked in this environment. Continuing without URL change.", err);
+            // Check socket connection status
+            if (!socket || !socket.connected) {
+                alert("Server connect hoyni. Please BACKEND_URL update korun ba server start korun.");
+                return;
             }
 
+            currentRoomId = roomId;
+            document.getElementById('display-room-id').textContent = roomId;
             joinScreen.classList.add('hidden');
             callScreen.classList.remove('hidden');
             callScreen.classList.add('flex');
 
             try {
                 localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-            } catch (error) {
-                console.warn('Could not start video source, trying audio only...');
-                try {
-                    localStream = await navigator.mediaDevices.getUserMedia({ video: false, audio: true });
-                    updateDeviceUIState('cam', false);
-                } catch (errorAudio) {
-                    alert('Could not access camera or microphone. You will join as a viewer.');
-                    localStream = new MediaStream(); 
-                    updateDeviceUIState('cam', false);
-                    updateDeviceUIState('mic', false);
-                }
+                addVideoStream(myVideo, localStream, 'local-wrapper', 'You');
+                socket.emit('join-room', roomId, socket.id);
+            } catch (e) { 
+                console.error("Media error:", e);
+                alert("Camera/Mic allow kora dorkar."); 
             }
-
-            addVideoStream(myVideo, localStream, 'local-wrapper', 'You');
-            initSocket();
         }
 
-        // --- Step 2: Socket.io Signaling ---
-        function initSocket() {
-            if(typeof io !== 'undefined') {
-                // WARNING: GitHub Pages e cholte hole ekhane apnar live Node.js backend server er link dite hobe.
-                // Udahoron: const BACKEND_URL = "https://amar-webrtc-server.onrender.com";
-                // Ekhon apni backend host korar por nicher link ti poriborton kore din:
-                const BACKEND_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-                    ? '/' 
-                    : 'https://APNAR-BACKEND-URL-EKHANE-DIN.onrender.com'; 
-                
-                socket = io(BACKEND_URL); 
-            } else {
-                showToast("Server connection failed. Socket.io not loaded.", true);
-                return;
-            }
-
-            socket.emit('join-room', currentRoomId, socket.id);
-
-            socket.on('user-connected', async (newUserId) => {
-                showToast(`New user joined`);
-                addParticipantToList(newUserId);
-                
-                const peerConnection = createPeerConnection(newUserId);
-                peers[newUserId] = peerConnection;
-
-                // 1. Create Data Channel for Chat (Caller side)
-                const dataChannel = peerConnection.createDataChannel('chat');
-                setupDataChannel(dataChannel, newUserId);
-
-                // 2. Add Media Tracks
-                localStream.getTracks().forEach(track => {
-                    peerConnection.addTrack(track, localStream);
-                });
-
-                const offer = await peerConnection.createOffer();
-                await peerConnection.setLocalDescription(offer);
-
-                socket.emit('offer', { target: newUserId, caller: socket.id, sdp: offer });
-            });
-
-            socket.on('offer', async (payload) => {
-                addParticipantToList(payload.caller);
-                const peerConnection = createPeerConnection(payload.caller);
-                peers[payload.caller] = peerConnection;
-
-                // Listen for Data Channel from caller
-                peerConnection.ondatachannel = (event) => {
-                    setupDataChannel(event.channel, payload.caller);
-                };
-
-                localStream.getTracks().forEach(track => {
-                    peerConnection.addTrack(track, localStream);
-                });
-
-                await peerConnection.setRemoteDescription(new RTCSessionDescription(payload.sdp));
-                const answer = await peerConnection.createAnswer();
-                await peerConnection.setLocalDescription(answer);
-
-                socket.emit('answer', { target: payload.caller, caller: socket.id, sdp: answer });
-            });
-
-            socket.on('answer', async (payload) => {
-                const peerConnection = peers[payload.caller];
-                if (peerConnection) {
-                    await peerConnection.setRemoteDescription(new RTCSessionDescription(payload.sdp));
-                }
-            });
-
-            socket.on('ice-candidate', (incoming) => {
-                const peerConnection = peers[incoming.caller];
-                if (peerConnection) {
-                    peerConnection.addIceCandidate(new RTCIceCandidate(incoming.candidate)).catch(e => console.error(e));
-                }
-            });
-
-            socket.on('user-disconnected', (userId) => {
-                showToast(`User left`);
-                removeParticipantFromList(userId);
-                if (peers[userId]) {
-                    peers[userId].close();
-                    delete peers[userId];
-                }
-                if (dataChannels[userId]) {
-                    delete dataChannels[userId];
-                }
-                const wrapper = document.getElementById(`wrapper-${userId}`);
-                if (wrapper) wrapper.remove();
-            });
-        }
-
-        // --- Step 3: WebRTC Peer & Data Channel Helpers ---
-        function createPeerConnection(targetUserId) {
-            const peerConnection = new RTCPeerConnection(rtcConfig);
-
-            peerConnection.onicecandidate = (event) => {
-                if (event.candidate && socket) {
-                    socket.emit('ice-candidate', { target: targetUserId, caller: socket.id, candidate: event.candidate });
+        function createPeerConnection(id) {
+            const pc = new RTCPeerConnection(rtcConfig);
+            pc.onicecandidate = (e) => e.candidate && socket.emit('ice-candidate', { target: id, caller: socket.id, candidate: e.candidate });
+            pc.ontrack = (e) => {
+                if (!document.getElementById(`video-${id}`)) {
+                    const v = document.createElement('video');
+                    v.id = `video-${id}`; v.style.transform = "scaleX(1)";
+                    addVideoStream(v, e.streams[0], `wrapper-${id}`, `User ${id.substring(0,4)}`);
                 }
             };
-
-            peerConnection.ontrack = (event) => {
-                let videoEl = document.getElementById(`video-${targetUserId}`);
-                if (!videoEl) {
-                    videoEl = document.createElement('video');
-                    videoEl.id = `video-${targetUserId}`;
-                    videoEl.style.transform = "scaleX(1)"; 
-                    videoEl.muted = false; 
-                    videoEl.volume = 1.0; 
-                    addVideoStream(videoEl, event.streams[0], `wrapper-${targetUserId}`, `User ${targetUserId.substring(0,4)}`);
-                }
-            };
-
-            return peerConnection;
+            return pc;
         }
 
-        function setupDataChannel(channel, peerId) {
-            dataChannels[peerId] = channel;
-            channel.onmessage = (event) => {
-                const data = JSON.parse(event.data);
-                if (data.type === 'chat') {
-                    appendMessage(data.text, `User ${peerId.substring(0,4)}`, false);
-                    if (sidebar.classList.contains('sidebar-closed') || viewChat.classList.contains('hidden')) {
-                        chatBadge.classList.remove('hidden');
-                    }
+        function setupDataChannel(dc, id) {
+            dataChannels[id] = dc;
+            dc.onmessage = (e) => {
+                const d = JSON.parse(e.data);
+                if (d.type === 'chat') {
+                    appendMessage(d.text, `User ${id.substring(0,4)}`, false);
+                    document.getElementById('chat-badge').classList.remove('hidden');
                 }
             };
         }
 
-        // --- Step 4: UI DOM Manipulation ---
-        function addVideoStream(video, stream, wrapperId, labelText) {
-            video.srcObject = stream;
-            video.autoplay = true;
-            video.playsInline = true;
-
-            video.addEventListener('loadedmetadata', () => { video.play().catch(e => console.error(e)); });
-
-            const wrapper = document.createElement('div');
-            wrapper.className = "video-wrapper";
-            if (wrapperId) wrapper.id = wrapperId;
-            
-            // Add Badge
-            const badge = document.createElement('div');
-            badge.className = "user-badge";
-            badge.textContent = labelText;
-            
-            wrapper.appendChild(video);
-            wrapper.appendChild(badge);
-            videoGrid.appendChild(wrapper);
+        function addVideoStream(v, s, wId, label) {
+            v.srcObject = s; v.autoplay = true; v.playsInline = true;
+            const w = document.createElement('div'); w.className = "video-wrapper"; w.id = wId;
+            const b = document.createElement('div'); b.className = "user-badge"; b.textContent = label;
+            w.appendChild(v); w.appendChild(b); videoGrid.appendChild(w);
         }
 
-        function updateDeviceUIState(type, isEnabled) {
-            const btn = type === 'mic' ? micToggle : camToggle;
-            const onIcon = document.getElementById(`${type}-on-icon`);
-            const offIcon = document.getElementById(`${type}-off-icon`);
-            
-            if (isEnabled) {
-                btn.classList.remove('danger');
-                onIcon.classList.remove('hidden');
-                offIcon.classList.add('hidden');
-            } else {
-                btn.classList.add('danger');
-                onIcon.classList.add('hidden');
-                offIcon.classList.remove('hidden');
+        function appendMessage(t, s, m) {
+            const d = document.createElement('div');
+            d.className = `flex flex-col ${m ? 'items-end' : 'items-start'} w-full`;
+            d.innerHTML = `<span class="text-[10px] text-slate-500 mb-1">${s}</span><div class="px-3 py-2 rounded-xl text-sm ${m ? 'bg-blue-600 text-white' : 'bg-slate-700 text-white'}">${t}</div>`;
+            chatMessages.appendChild(d); chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function addParticipantToList(id) {
+            if (connectedUsers.has(id)) return;
+            connectedUsers.add(id);
+            const li = document.createElement('li'); li.id = `p-${id}`;
+            li.className = "flex items-center gap-3 p-2 bg-slate-800 rounded-lg";
+            li.innerHTML = `<div class="w-8 h-8 rounded-full bg-slate-600 flex items-center justify-center text-xs font-bold uppercase">${id.substring(0,2)}</div><span class="text-sm">User ${id.substring(0,4)}</span>`;
+            document.getElementById('people-list').appendChild(li);
+            document.getElementById('people-count-badge').textContent = connectedUsers.size + 1;
+        }
+
+        function removeParticipantFromList(id) {
+            connectedUsers.delete(id);
+            document.getElementById(`p-${id}`)?.remove();
+            document.getElementById('people-count-badge').textContent = connectedUsers.size + 1;
+        }
+
+        // --- Buttons ---
+        document.getElementById('create-room-btn').onclick = () => {
+            const randomId = Math.random().toString(36).substring(7);
+            startCall(randomId);
+        };
+        
+        document.getElementById('join-room-btn').onclick = () => {
+            const val = document.getElementById('room-id-input').value;
+            if (val) startCall(val);
+        };
+        
+        document.getElementById('mic-toggle').onclick = () => {
+            if (localStream) {
+                const t = localStream.getAudioTracks()[0];
+                t.enabled = !t.enabled;
+                document.getElementById('mic-toggle').classList.toggle('danger', !t.enabled);
             }
-        }
-
-        // --- Features: Screen Share ---
-        async function toggleScreenShare() {
-            if (!isScreenSharing) {
-                try {
-                    screenStream = await navigator.mediaDevices.getDisplayMedia({ video: { cursor: "always" }, audio: false });
-                    const screenTrack = screenStream.getVideoTracks()[0];
-                    
-                    // Display locally
-                    myVideo.srcObject = screenStream;
-                    myVideo.classList.add('screen-share');
-
-                    // Replace track for all peers
-                    for (let peerId in peers) {
-                        const sender = peers[peerId].getSenders().find(s => s.track && s.track.kind === 'video');
-                        if (sender) sender.replaceTrack(screenTrack);
-                    }
-
-                    screenTrack.onended = () => stopScreenShare();
-                    isScreenSharing = true;
-                    shareToggle.classList.add('active');
-                } catch (e) { console.error("Screen share failed", e); }
-            } else {
-                stopScreenShare();
+        };
+        
+        document.getElementById('cam-toggle').onclick = () => {
+            if (localStream) {
+                const t = localStream.getVideoTracks()[0];
+                t.enabled = !t.enabled;
+                document.getElementById('cam-toggle').classList.toggle('danger', !t.enabled);
             }
-        }
+        };
 
-        function stopScreenShare() {
-            if (!isScreenSharing) return;
-            const camTrack = localStream.getVideoTracks()[0];
+        document.getElementById('copy-btn').onclick = () => {
+            const link = `${window.location.origin}${window.location.pathname}?room=${currentRoomId}`;
+            const temp = document.createElement('input');
+            temp.value = link;
+            document.body.appendChild(temp);
+            temp.select();
+            document.execCommand('copy');
+            document.body.removeChild(temp);
             
-            myVideo.srcObject = localStream;
-            myVideo.classList.remove('screen-share');
+            const toast = document.getElementById('toast-notification');
+            toast.classList.remove('hidden');
+            toast.classList.add('flex');
+            setTimeout(() => toast.classList.add('hidden'), 2000);
+        };
 
-            for (let peerId in peers) {
-                const sender = peers[peerId].getSenders().find(s => s.track && s.track.kind === 'video');
-                if (sender && camTrack) sender.replaceTrack(camTrack);
-            }
+        document.getElementById('leave-btn').onclick = () => window.location.reload();
 
-            if (screenStream) screenStream.getTracks().forEach(t => t.stop());
-            isScreenSharing = false;
-            shareToggle.classList.remove('active');
-        }
-
-        // --- Features: Chat & Participants ---
-        function appendMessage(text, senderName, isMe) {
-            const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-            const msgDiv = document.createElement('div');
-            msgDiv.className = `flex flex-col ${isMe ? 'items-end' : 'items-start'} w-full`;
-            
-            msgDiv.innerHTML = `
-                <span class="text-[10px] text-slate-500 mb-1 ml-1">${senderName} • ${time}</span>
-                <div class="px-3 py-2 rounded-xl text-sm max-w-[85%] ${isMe ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-slate-700 text-white rounded-tl-none'}">
-                    ${text}
-                </div>
-            `;
-            chatMessages.appendChild(msgDiv);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        }
-
-        function addParticipantToList(userId) {
-            if (connectedUsers.has(userId)) return;
-            connectedUsers.add(userId);
-            
-            const li = document.createElement('li');
-            li.id = `participant-${userId}`;
-            li.className = "flex items-center gap-3 p-2 bg-slate-800/50 hover:bg-slate-800 rounded-lg transition border border-slate-700/50";
-            li.innerHTML = `
-                <div class="w-8 h-8 rounded-full bg-slate-600 flex items-center justify-center text-xs font-bold text-white uppercase">${userId.substring(0,2)}</div>
-                <span class="text-sm text-slate-200">User ${userId.substring(0,4)}</span>
-            `;
-            peopleList.appendChild(li);
-            updatePeopleCount();
-        }
-
-        function removeParticipantFromList(userId) {
-            connectedUsers.delete(userId);
-            const el = document.getElementById(`participant-${userId}`);
-            if (el) el.remove();
-            updatePeopleCount();
-        }
-
-        function updatePeopleCount() {
-            peopleCountBadge.textContent = connectedUsers.size + 1; // +1 for self
-        }
-
-        // --- Sidebar Toggles ---
-        function openSidebar(view) {
-            sidebar.classList.remove('sidebar-closed');
-            if (view === 'chat') {
-                tabChat.classList.add('text-blue-500', 'border-blue-500');
-                tabChat.classList.remove('text-slate-400', 'border-transparent');
-                tabPeople.classList.remove('text-blue-500', 'border-blue-500');
-                tabPeople.classList.add('text-slate-400', 'border-transparent');
-                viewChat.classList.remove('hidden');
-                viewPeople.classList.add('hidden');
-                chatBadge.classList.add('hidden'); // clear notification
-            } else {
-                tabPeople.classList.add('text-blue-500', 'border-blue-500');
-                tabPeople.classList.remove('text-slate-400', 'border-transparent');
-                tabChat.classList.remove('text-blue-500', 'border-blue-500');
-                tabChat.classList.add('text-slate-400', 'border-transparent');
-                viewPeople.classList.remove('hidden');
-                viewChat.classList.add('hidden');
-            }
-        }
-
-
-        // --- Event Listeners ---
-        createRoomBtn.addEventListener('click', () => startCall(generateRoomId()));
-        joinRoomBtn.addEventListener('click', () => {
-            const roomId = roomInput.value.trim();
-            // Basic link extraction if user pastes full URL
-            const finalId = roomId.includes('?room=') ? roomId.split('?room=')[1] : roomId;
-            if (finalId) startCall(finalId);
-            else alert("Please enter a valid Meeting ID or Link");
-        });
-
-        copyBtn.addEventListener('click', () => {
-            let link = window.location.href;
-            if(!link.includes('?room=')) link = `${window.location.origin}${window.location.pathname}?room=${currentRoomId}`;
-            try {
-                const tempInput = document.createElement('input');
-                tempInput.value = link;
-                document.body.appendChild(tempInput);
-                tempInput.select();
-                document.execCommand('copy');
-                document.body.removeChild(tempInput);
-                showToast("Meeting link copied!");
-            } catch (err) { alert(`Copy failed. Share this link: ${link}`); }
-        });
-
-        micToggle.addEventListener('click', () => {
-            const track = localStream?.getAudioTracks()[0];
-            if (track) {
-                track.enabled = !track.enabled;
-                updateDeviceUIState('mic', track.enabled);
-            }
-        });
-
-        camToggle.addEventListener('click', () => {
-            const track = localStream?.getVideoTracks()[0];
-            if (track) {
-                track.enabled = !track.enabled;
-                updateDeviceUIState('cam', track.enabled);
-            }
-        });
-
-        shareToggle.addEventListener('click', toggleScreenShare);
-
-        leaveBtn.addEventListener('click', () => {
-            if (localStream) localStream.getTracks().forEach(t => t.stop());
-            if (screenStream) screenStream.getTracks().forEach(t => t.stop());
-            if (socket) socket.disconnect();
-            
-            try {
-                window.location.href = window.location.pathname; // Reload without query params
-            } catch(e) {
-                window.location.reload(); // Fallback for sandboxed iframe
-            }
-        });
-
-        // Chat Form Submit
-        chatForm.addEventListener('submit', (e) => {
+        document.getElementById('chat-form').onsubmit = (e) => {
             e.preventDefault();
-            const text = chatInput.value.trim();
-            if (!text) return;
-            
-            // Add locally
-            appendMessage(text, "You", true);
-            chatInput.value = '';
-
-            // Send via WebRTC Data Channels
-            const payload = JSON.stringify({ type: 'chat', text });
-            for (let peerId in dataChannels) {
-                if (dataChannels[peerId].readyState === 'open') {
-                    dataChannels[peerId].send(payload);
-                }
+            const val = document.getElementById('chat-input').value;
+            if (!val) return;
+            appendMessage(val, "You", true);
+            document.getElementById('chat-input').value = '';
+            const p = JSON.stringify({ type: 'chat', text: val });
+            for (let id in dataChannels) {
+                if (dataChannels[id].readyState === 'open') dataChannels[id].send(p);
             }
-        });
+        };
 
-        // Sidebar Listeners
-        chatToggle.addEventListener('click', () => openSidebar('chat'));
-        peopleToggle.addEventListener('click', () => openSidebar('people'));
-        tabChat.addEventListener('click', () => openSidebar('chat'));
-        tabPeople.addEventListener('click', () => openSidebar('people'));
-        closeSidebarBtn.addEventListener('click', () => sidebar.classList.add('sidebar-closed'));
+        document.getElementById('chat-toggle').onclick = () => {
+            document.getElementById('sidebar').classList.remove('sidebar-closed');
+            document.getElementById('chat-badge').classList.add('hidden');
+        };
 
+        document.getElementById('people-toggle').onclick = () => {
+            document.getElementById('sidebar').classList.remove('sidebar-closed');
+            document.getElementById('view-chat').classList.add('hidden');
+            document.getElementById('view-people').classList.remove('hidden');
+        };
+
+        document.getElementById('tab-chat').onclick = () => {
+            document.getElementById('view-chat').classList.remove('hidden');
+            document.getElementById('view-people').classList.add('hidden');
+            document.getElementById('tab-chat').classList.add('text-blue-500', 'border-blue-500');
+            document.getElementById('tab-people').classList.remove('text-blue-500', 'border-blue-500');
+        };
+
+        document.getElementById('tab-people').onclick = () => {
+            document.getElementById('view-chat').classList.add('hidden');
+            document.getElementById('view-people').classList.remove('hidden');
+            document.getElementById('tab-people').classList.add('text-blue-500', 'border-blue-500');
+            document.getElementById('tab-chat').classList.remove('text-blue-500', 'border-blue-500');
+        };
+
+        document.getElementById('close-sidebar').onclick = () => document.getElementById('sidebar').classList.add('sidebar-closed');
     </script>
 </body>
 </html>
