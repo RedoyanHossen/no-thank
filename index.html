@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QuickMeet - WebRTC Video Call</title>
+    <title>QuickMeet - WebRTC Group Video Call</title>
     
     <!-- Tailwind CSS for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -33,10 +33,8 @@
     </script>
     <style>
         /* Custom styles for video elements */
-        #remote-video {
-            object-fit: cover;
+        .mirror-video {
             transform: scaleX(-1); /* Mirror effect */
-            transition: transform 0.3s ease;
         }
         .unmirrored {
             transform: scaleX(1) !important; /* For screen sharing */
@@ -99,7 +97,7 @@
                 <i class="fas fa-video text-4xl"></i>
             </div>
             <h1 class="text-5xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-gray-900 to-gray-600 mb-3">QuickMeet</h1>
-            <p class="text-gray-500 max-w-md mx-auto text-lg">High quality, secure, peer-to-peer video calls right in your browser.</p>
+            <p class="text-gray-500 max-w-md mx-auto text-lg">High quality, secure, group video calls right in your browser. Up to 20 users!</p>
         </div>
 
         <div class="glass-panel p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] w-full max-w-md relative z-10">
@@ -119,7 +117,7 @@
                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <i class="fas fa-user text-gray-400"></i>
                     </div>
-                    <input type="text" id="user-name-input" placeholder="Tomar Nam (Your Name)" class="w-full bg-white/50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 block pl-10 p-3.5 outline-none transition-all placeholder-gray-400 shadow-sm">
+                    <input type="text" id="user-name-input" placeholder="Your Name" class="w-full bg-white/50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 block pl-10 p-3.5 outline-none transition-all placeholder-gray-400 shadow-sm">
                 </div>
 
                 <button onclick="createRoom()" class="w-full bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white font-bold py-3.5 px-4 rounded-xl transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg hover:shadow-indigo-500/30 flex items-center justify-center gap-3">
@@ -153,17 +151,17 @@
     <div id="call-screen" class="h-full w-full bg-gray-950 relative hidden flex-row overflow-hidden">
         
         <!-- Main Video Area -->
-        <div class="relative flex-grow h-full overflow-hidden bg-[#0a0a0a] flex justify-center items-center transition-all duration-300" id="video-area">
+        <div class="relative flex-grow h-full overflow-hidden bg-[#0a0a0a] flex flex-col items-center transition-all duration-300" id="video-area">
             
             <!-- Header / Info Bar -->
-            <div class="absolute top-0 left-0 w-full p-6 flex justify-between items-center z-20 bg-gradient-to-b from-black/80 to-transparent">
-                <div class="glass-panel-dark px-4 py-2 rounded-full flex items-center gap-2 shadow-lg">
+            <div class="absolute top-0 left-0 w-full p-6 flex justify-between items-center z-30 bg-gradient-to-b from-black/80 to-transparent pointer-events-none">
+                <div class="glass-panel-dark px-4 py-2 rounded-full flex items-center gap-2 shadow-lg pointer-events-auto">
                     <div class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
                     <span class="text-white font-medium text-sm tracking-wide">Secure Call</span>
                 </div>
                 
                 <!-- Room ID Display -->
-                <div id="room-info" class="hidden items-center glass-panel-dark rounded-full pr-2 pl-5 py-1.5 shadow-lg group transition-all">
+                <div id="room-info" class="hidden items-center glass-panel-dark rounded-full pr-2 pl-5 py-1.5 shadow-lg group transition-all pointer-events-auto">
                     <span class="text-gray-300 text-sm mr-2 font-medium">Link: <span id="display-room-id" class="text-white font-mono tracking-wider ml-1 select-all">...</span></span>
                     <button onclick="copyRoomLink()" class="w-8 h-8 flex items-center justify-center bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors" title="Copy Meeting Link">
                         <i class="fas fa-copy text-sm"></i>
@@ -172,15 +170,15 @@
             </div>
 
             <!-- Waiting Message -->
-            <div id="waiting-message" class="absolute inset-0 flex flex-col items-center justify-center z-10 hidden bg-gray-950/50 backdrop-blur-sm">
-                <div class="glass-panel-dark p-10 rounded-3xl text-center shadow-2xl max-w-sm border border-white/10 relative overflow-hidden">
+            <div id="waiting-message" class="absolute inset-0 flex flex-col items-center justify-center z-20 hidden bg-gray-950/50 backdrop-blur-sm pointer-events-none">
+                <div class="glass-panel-dark p-10 rounded-3xl text-center shadow-2xl max-w-sm border border-white/10 relative overflow-hidden pointer-events-auto">
                     <div class="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-indigo-500 rounded-full filter blur-[50px] opacity-20"></div>
 
                     <div class="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6 border border-white/10">
                         <i class="fas fa-user-clock text-3xl text-indigo-400 animate-pulse"></i>
                     </div>
                     <h2 class="text-2xl font-bold text-white mb-3">Waiting for others</h2>
-                    <p class="text-gray-400 mb-8 text-sm leading-relaxed">Share the meeting link below with the person you want to meet. They can join instantly.</p>
+                    <p class="text-gray-400 mb-8 text-sm leading-relaxed">Share the meeting link below with the people you want to meet. Up to 20 users can join!</p>
                     
                     <div class="bg-black/40 rounded-xl p-4 border border-white/5 mb-4 group cursor-pointer hover:bg-black/60 transition-colors" onclick="copyRoomLink()">
                         <div class="text-xs text-indigo-400 font-bold uppercase tracking-widest mb-1">Meeting Link</div>
@@ -192,18 +190,18 @@
                 </div>
             </div>
 
-            <!-- Remote Video (Big) -->
-            <video id="remote-video" class="w-full h-full opacity-0 transition-opacity duration-1000 object-cover" autoplay playsinline></video>
-            
-            <!-- User not connected placeholder -->
-            <div id="remote-placeholder" class="absolute inset-0 flex items-center justify-center flex-col pointer-events-none">
-                <div class="w-32 h-32 rounded-full bg-gray-800 border-2 border-gray-700 flex items-center justify-center shadow-2xl mb-4">
-                    <i class="fas fa-user text-5xl text-gray-600"></i>
+            <!-- Remote Videos Grid -->
+            <div id="video-grid" class="w-full h-full p-4 pt-20 pb-28 gap-4 grid place-items-center transition-all duration-500">
+                <!-- User not connected placeholder -->
+                <div id="remote-placeholder" class="col-span-full w-full h-full flex flex-col items-center justify-center pointer-events-none">
+                    <div class="w-32 h-32 rounded-full bg-gray-800 border-2 border-gray-700 flex items-center justify-center shadow-2xl mb-4">
+                        <i class="fas fa-users text-5xl text-gray-600"></i>
+                    </div>
                 </div>
             </div>
 
             <!-- Local Video (Picture in Picture) -->
-            <div id="local-video-container" class="absolute bottom-28 right-6 sm:bottom-8 sm:right-8 w-36 sm:w-56 aspect-video bg-gray-900 rounded-2xl overflow-hidden shadow-2xl border border-white/20 z-20 cursor-move group transition-all duration-300 hover:scale-105 hover:shadow-indigo-500/20 ring-4 ring-black/50">
+            <div id="local-video-container" class="absolute bottom-28 right-6 sm:bottom-8 sm:right-8 w-36 sm:w-56 aspect-video bg-gray-900 rounded-2xl overflow-hidden shadow-2xl border border-white/20 z-40 cursor-move group transition-all duration-300 hover:scale-105 hover:shadow-indigo-500/20 ring-4 ring-black/50">
                 <video id="local-video" class="w-full h-full object-cover" autoplay muted playsinline></video>
                 <div class="absolute bottom-2 left-2 flex gap-1">
                     <div id="local-mic-indicator" class="glass-panel-dark px-2 py-1 rounded-md hidden shadow-lg border border-red-500/30">
@@ -214,7 +212,7 @@
             </div>
 
             <!-- Controls Bar -->
-            <div class="absolute bottom-0 left-0 w-full p-6 flex justify-center items-center z-30 bg-gradient-to-t from-black via-black/80 to-transparent pointer-events-none">
+            <div class="absolute bottom-0 left-0 w-full p-6 flex justify-center items-center z-50 bg-gradient-to-t from-black via-black/80 to-transparent pointer-events-none">
                 <div class="flex items-center space-x-2 sm:space-x-4 glass-panel-dark px-6 py-3 rounded-3xl shadow-[0_0_40px_rgba(0,0,0,0.5)] pointer-events-auto">
                     
                     <!-- Mic Toggle -->
@@ -237,7 +235,7 @@
                     <!-- Participants Toggle -->
                     <button id="btn-participants" onclick="toggleSidebar('participants')" class="w-12 h-12 rounded-2xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all duration-300 shadow-lg group relative">
                         <i class="fas fa-users text-lg group-hover:scale-110 transition-transform"></i>
-                        <span id="participants-badge" class="absolute -top-1 -right-1 bg-indigo-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center hidden">2</span>
+                        <span id="participants-badge" class="absolute -top-1 -right-1 bg-indigo-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center hidden">1</span>
                     </button>
                     
                     <!-- Chat Toggle -->
@@ -257,7 +255,7 @@
         </div>
 
         <!-- Sidebar (Chat & Participants) -->
-        <div id="sidebar" class="w-80 h-full glass-panel-dark border-l border-white/10 flex flex-col transition-all duration-300 transform translate-x-full absolute right-0 z-40 sm:relative sm:translate-x-0 sm:w-0 overflow-hidden">
+        <div id="sidebar" class="w-80 h-full glass-panel-dark border-l border-white/10 flex flex-col transition-all duration-300 transform translate-x-full absolute right-0 z-50 sm:relative sm:translate-x-0 sm:w-0 overflow-hidden">
             
             <!-- Sidebar Header -->
             <div class="p-4 border-b border-white/10 flex justify-between items-center bg-white/5">
@@ -285,18 +283,7 @@
             <!-- Participants Content -->
             <div id="participants-content" class="flex-grow overflow-y-auto p-4 hide-scroll hidden">
                 <div class="space-y-3" id="participants-list">
-                    <!-- You -->
-                    <div class="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold">You</div>
-                            <span class="text-white font-medium text-sm">You (Host)</span>
-                        </div>
-                        <div class="flex gap-2 text-gray-400 text-xs">
-                            <i class="fas fa-microphone"></i>
-                            <i class="fas fa-video"></i>
-                        </div>
-                    </div>
-                    <!-- Remote User will be appended here dynamically -->
+                    <!-- Participants will be dynamically generated -->
                 </div>
             </div>
 
@@ -305,37 +292,35 @@
     </div>
 
     <script>
-        // --- State Variables ---
+        // --- Core State Variables ---
         let peer = null;
         let localStream = null;
-        let currentCall = null;
-        let chatConnection = null;
         
         let isMicMuted = false;
         let isCamOff = false;
-        let activeRoomId = '';
+        let activeRoomId = ''; // This defines the host's ID
         let isDummyStream = false;
         let isScreenSharing = false;
         let screenStream = null;
         
         let activeSidebar = null; // 'chat' or 'participants'
         let unreadMessages = 0;
-        let remotePeerId = null;
 
         let localUserName = 'Guest';
-        let remoteUserName = 'Guest';
+
+        // MESH NETWORK STATE: Manage up to 20 connections
+        // structure: peers[peerId] = { name, call, data, stream }
+        const peers = {};
 
         // --- DOM Elements ---
         const screens = {
             setup: document.getElementById('setup-screen'),
             call: document.getElementById('call-screen')
         };
-        const videos = {
-            preview: document.getElementById('preview-video'),
-            local: document.getElementById('local-video'),
-            remote: document.getElementById('remote-video')
-        };
         const ui = {
+            previewVideo: document.getElementById('preview-video'),
+            localVideo: document.getElementById('local-video'),
+            videoGrid: document.getElementById('video-grid'),
             previewOverlay: document.getElementById('preview-overlay'),
             waitingMessage: document.getElementById('waiting-message'),
             roomInfo: document.getElementById('room-info'),
@@ -439,8 +424,8 @@
             }
 
             if (localStream) {
-                videos.preview.srcObject = localStream;
-                videos.local.srcObject = localStream;
+                ui.previewVideo.srcObject = localStream;
+                ui.localVideo.srcObject = localStream;
                 ui.previewOverlay.classList.add('opacity-0'); 
                 setTimeout(() => ui.previewOverlay.classList.add('hidden'), 300);
             }
@@ -461,7 +446,7 @@
 
         window.addEventListener('load', initializeMedia);
 
-        // --- Core WebRTC / PeerJS Logic ---
+        // --- Core WebRTC / PeerJS Logic (MESH) ---
 
         function initPeer() {
             return new Peer({
@@ -479,39 +464,22 @@
             }
 
             localUserName = ui.userNameInput.value.trim() || 'Host';
-
             switchScreen('call');
             showToast("Generating Meeting Link...");
 
             peer = initPeer();
 
             peer.on('open', (id) => {
-                activeRoomId = id;
+                activeRoomId = id; // Host's Peer ID is the Room ID
                 const link = getRoomLink(id);
-                ui.displayRoomId.innerText = id; // Show just ID in top bar, copy copies link
+                ui.displayRoomId.innerText = id;
                 ui.waitingRoomId.innerText = link;
                 ui.roomInfo.classList.remove('hidden');
                 ui.roomInfo.classList.add('flex');
                 ui.waitingMessage.classList.remove('hidden');
-                updateParticipantsList(true); // Host only
-            });
-
-            // Listen for incoming media calls
-            peer.on('call', (call) => {
-                call.answer(localStream);
-                setupCallEvents(call);
-                remotePeerId = call.peer;
                 
-                ui.waitingMessage.classList.add('hidden');
-                ui.remotePlaceholder.classList.add('hidden');
-                updateParticipantsList(true, remotePeerId);
-                showToast("Someone joined the meeting!");
-            });
-
-            // Listen for incoming data connections (Chat)
-            peer.on('connection', (conn) => {
-                chatConnection = conn;
-                setupChatEvents();
+                updateParticipantsList(); 
+                setupPeerListeners();
             });
 
             handlePeerErrors();
@@ -530,10 +498,10 @@
 
             localUserName = ui.userNameInput.value.trim() || 'Guest';
 
-            // Extract ID if a full URL was pasted
             if (inputId.includes('?room=')) {
                 inputId = inputId.split('?room=')[1].split('&')[0];
             }
+            activeRoomId = inputId;
 
             switchScreen('call');
             ui.roomInfo.classList.add('hidden'); 
@@ -543,57 +511,217 @@
             peer = initPeer();
 
             peer.on('open', () => {
-                // 1. Establish Media Call
-                const call = peer.call(inputId, localStream);
-                setupCallEvents(call);
-                ui.remotePlaceholder.classList.add('hidden');
-                remotePeerId = inputId;
-                updateParticipantsList(false, remotePeerId);
-
-                // 2. Establish Data Connection for Chat
-                chatConnection = peer.connect(inputId);
-                setupChatEvents();
+                setupPeerListeners();
+                initiateConnection(inputId); // Connect to Host
             });
 
             handlePeerErrors();
         }
 
-        function setupCallEvents(call) {
-            if (currentCall) currentCall.close();
-            currentCall = call;
-
-            call.on('stream', (remoteStream) => {
-                videos.remote.srcObject = remoteStream;
-                videos.remote.onloadedmetadata = () => {
-                    videos.remote.classList.remove('opacity-0');
-                    videos.remote.classList.add('opacity-100');
-                };
+        // Global Listeners for incoming Mesh Connections
+        function setupPeerListeners() {
+            // Incoming Call
+            peer.on('call', (call) => {
+                if (!peers[call.peer]) peers[call.peer] = { name: 'Joining...' };
+                peers[call.peer].call = call;
+                
+                call.answer(localStream);
+                setupMediaCallEvents(call);
+                
+                ui.waitingMessage.classList.add('hidden');
             });
 
-            call.on('close', () => {
-                showToast("The other person left the meeting.");
-                remotePeerId = null;
-                updateParticipantsList(activeRoomId !== '', null);
-                resetRemoteVideo();
+            // Incoming Data Connection
+            peer.on('connection', (conn) => {
+                if (!peers[conn.peer]) peers[conn.peer] = { name: 'Joining...' };
+                peers[conn.peer].data = conn;
+                
+                setupDataConnEvents(conn);
             });
+        }
+
+        // Connect to a specific peer
+        function initiateConnection(targetPeerId) {
+            if (peers[targetPeerId]) return; // Already connected
+            
+            peers[targetPeerId] = { name: 'Connecting...' };
+            
+            // 1. Media
+            const call = peer.call(targetPeerId, localStream);
+            peers[targetPeerId].call = call;
+            setupMediaCallEvents(call);
+
+            // 2. Data
+            const conn = peer.connect(targetPeerId);
+            peers[targetPeerId].data = conn;
+            setupDataConnEvents(conn);
+        }
+
+        // Handle Media Events
+        function setupMediaCallEvents(call) {
+            call.on('stream', (stream) => {
+                if (peers[call.peer]) {
+                    peers[call.peer].stream = stream;
+                    addVideoElement(call.peer, stream);
+                }
+            });
+            call.on('close', () => removePeer(call.peer));
+            call.on('error', () => removePeer(call.peer));
+        }
+
+        // Handle Data Events
+        function setupDataConnEvents(conn) {
+            ui.chatInput.disabled = false;
+            ui.chatSubmit.disabled = false;
+
+            conn.on('open', () => {
+                // Introduce ourselves
+                conn.send({ type: 'handshake', name: localUserName });
+            });
+
+            conn.on('data', (data) => {
+                if (data.type === 'handshake') {
+                    if (peers[conn.peer]) {
+                        peers[conn.peer].name = data.name;
+                        updateParticipantsList();
+                        updateVideoLabel(conn.peer, data.name);
+                        appendMessage(`System: ${data.name} has joined.`, 'system');
+                    }
+
+                    // If I am the Host, I must send the new guest the list of ALL OTHER currently connected guests so they can mesh connect.
+                    if (peer.id === activeRoomId) {
+                        const existingPeers = Object.keys(peers).filter(p => p !== conn.peer);
+                        if (existingPeers.length > 0) {
+                            conn.send({ type: 'peer-list', list: existingPeers });
+                        }
+                    }
+                } 
+                else if (data.type === 'peer-list') {
+                    // Host sent us the list of other active peers. Let's connect to them.
+                    data.list.forEach(peerId => {
+                        if (peerId !== peer.id && !peers[peerId]) {
+                            initiateConnection(peerId);
+                        }
+                    });
+                } 
+                else if (data.type === 'chat') {
+                    const senderName = peers[conn.peer]?.name || 'Guest';
+                    appendMessage(data.text, 'them', senderName);
+                    if (activeSidebar !== 'chat') {
+                        unreadMessages++;
+                        ui.chatBadge.innerText = unreadMessages > 9 ? '9+' : unreadMessages;
+                        ui.chatBadge.classList.remove('hidden');
+                    }
+                }
+            });
+
+            conn.on('close', () => removePeer(conn.peer));
+            conn.on('error', () => removePeer(conn.peer));
         }
 
         function handlePeerErrors() {
             peer.on('error', (err) => {
                 console.error("Peer error:", err);
                 if (err.type === 'peer-unavailable') {
-                    showToast("Meeting not found. The host may have left.");
+                    // Only show critical error if we were trying to join the host and failed
+                    if (Object.keys(peers).length === 0) {
+                        showToast("Meeting not found. The host may have left.");
+                        endCall();
+                    }
                 } else {
                     showToast("Connection error occurred.");
                 }
-                endCall();
             });
+        }
+
+        // --- Dynamic Video Grid Rendering ---
+        function addVideoElement(peerId, stream) {
+            if (document.getElementById(`video-container-${peerId}`)) return; // Already exists
+            
+            const container = document.createElement('div');
+            container.id = `video-container-${peerId}`;
+            container.className = 'relative w-full h-full min-h-[150px] max-h-full rounded-2xl overflow-hidden shadow-lg bg-gray-900 border border-white/10 transition-all duration-300 flex items-center justify-center';
+            
+            const video = document.createElement('video');
+            video.id = `video-${peerId}`;
+            video.srcObject = stream;
+            video.autoplay = true;
+            video.playsInline = true;
+            video.className = 'w-full h-full object-cover transition-opacity duration-500 opacity-0 mirror-video';
+            video.onloadedmetadata = () => video.classList.add('opacity-100');
+            
+            const nameLabel = document.createElement('div');
+            nameLabel.id = `label-${peerId}`;
+            nameLabel.className = 'absolute bottom-3 left-3 glass-panel-dark px-3 py-1 rounded-lg text-xs font-bold text-white tracking-wide shadow-lg z-10';
+            nameLabel.innerText = peers[peerId]?.name || 'Connecting...';
+            
+            container.appendChild(video);
+            container.appendChild(nameLabel);
+            ui.videoGrid.appendChild(container);
+            
+            updateGridClasses();
+        }
+
+        function updateVideoLabel(peerId, name) {
+            const label = document.getElementById(`label-${peerId}`);
+            if (label) label.innerText = name;
+        }
+
+        function removePeer(peerId) {
+            if (peers[peerId]) {
+                const name = peers[peerId].name || 'Someone';
+                if (peers[peerId].call) peers[peerId].call.close();
+                if (peers[peerId].data) peers[peerId].data.close();
+                appendMessage(`System: ${name} has left the meeting.`, 'system');
+                delete peers[peerId];
+            }
+            
+            const el = document.getElementById(`video-container-${peerId}`);
+            if (el) el.remove();
+            
+            updateParticipantsList();
+            updateGridClasses();
+        }
+
+        function updateGridClasses() {
+            const count = Object.keys(peers).length;
+            
+            // Remove existing grid column classes
+            ui.videoGrid.className = 'w-full h-full p-4 pt-20 pb-28 gap-4 grid place-items-center transition-all duration-500';
+            
+            if (count === 0) {
+                ui.remotePlaceholder.classList.remove('hidden');
+                // Ensure waiting message is visible if we are host and alone
+                if (peer && peer.id === activeRoomId) {
+                    ui.waitingMessage.classList.remove('hidden');
+                }
+            } else {
+                ui.remotePlaceholder.classList.add('hidden');
+                ui.waitingMessage.classList.add('hidden');
+                
+                // Dynamic grid logic based on participant count
+                if (count === 1) {
+                    ui.videoGrid.classList.add('grid-cols-1');
+                } else if (count === 2) {
+                    ui.videoGrid.classList.add('grid-cols-1', 'sm:grid-cols-2');
+                } else if (count <= 4) {
+                    ui.videoGrid.classList.add('grid-cols-2');
+                } else if (count <= 6) {
+                    ui.videoGrid.classList.add('grid-cols-2', 'md:grid-cols-3');
+                } else if (count <= 9) {
+                    ui.videoGrid.classList.add('grid-cols-3');
+                } else if (count <= 16) {
+                    ui.videoGrid.classList.add('grid-cols-4');
+                } else {
+                    ui.videoGrid.classList.add('grid-cols-4', 'lg:grid-cols-5');
+                }
+            }
         }
 
         // --- Screen Sharing ---
         async function toggleScreenShare() {
-            if (!currentCall) {
-                showToast("Cannot share screen. No active call.");
+            if (Object.keys(peers).length === 0) {
+                showToast("Cannot share screen. No one else is in the meeting.");
                 return;
             }
 
@@ -602,20 +730,19 @@
                     screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
                     const videoTrack = screenStream.getVideoTracks()[0];
                     
-                    // Replace track in peer connection
-                    const sender = currentCall.peerConnection.getSenders().find(s => s.track.kind === 'video');
-                    sender.replaceTrack(videoTrack);
+                    // Replace track in ALL peer connections
+                    Object.values(peers).forEach(p => {
+                        if (p.call && p.call.peerConnection) {
+                            const sender = p.call.peerConnection.getSenders().find(s => s.track.kind === 'video');
+                            if (sender) sender.replaceTrack(videoTrack);
+                        }
+                    });
                     
                     isScreenSharing = true;
-                    
-                    // Update UI
                     ui.btnScreen.classList.replace('bg-white/10', 'bg-indigo-500');
                     ui.btnScreen.classList.replace('hover:bg-white/20', 'hover:bg-indigo-600');
                     
-                    // Stop sharing if user clicks browser's native "Stop sharing" button
-                    videoTrack.onended = () => {
-                        stopScreenShare();
-                    };
+                    videoTrack.onended = () => stopScreenShare();
                 } catch (e) {
                     console.error("Screen share failed", e);
                     showToast("Screen sharing was cancelled or failed.");
@@ -629,10 +756,14 @@
             if (!isScreenSharing) return;
             
             const videoTrack = localStream.getVideoTracks()[0];
-            const sender = currentCall.peerConnection.getSenders().find(s => s.track.kind === 'video');
-            if (sender) {
-                sender.replaceTrack(videoTrack);
-            }
+            
+            // Restore camera track for all peers
+            Object.values(peers).forEach(p => {
+                if (p.call && p.call.peerConnection) {
+                    const sender = p.call.peerConnection.getSenders().find(s => s.track.kind === 'video');
+                    if (sender) sender.replaceTrack(videoTrack);
+                }
+            });
             
             if (screenStream) {
                 screenStream.getTracks().forEach(track => track.stop());
@@ -644,54 +775,27 @@
         }
 
         // --- Chat System ---
-        function setupChatEvents() {
-            ui.chatInput.disabled = false;
-            ui.chatSubmit.disabled = false;
-
-            chatConnection.on('open', () => {
-                console.log('Chat connection opened');
-                // Send handshake to share user name
-                chatConnection.send({ type: 'handshake', name: localUserName });
-            });
-
-            chatConnection.on('data', (data) => {
-                if (data.type === 'handshake') {
-                    remoteUserName = data.name || 'Guest Participant';
-                    updateParticipantsList(activeRoomId !== '', remotePeerId);
-                    appendMessage(`System: ${remoteUserName} has joined the meeting.`, 'system');
-                } else if (data.type === 'chat') {
-                    appendMessage(data.text, 'them', remoteUserName);
-                    if (activeSidebar !== 'chat') {
-                        unreadMessages++;
-                        ui.chatBadge.innerText = unreadMessages > 9 ? '9+' : unreadMessages;
-                        ui.chatBadge.classList.remove('hidden');
-                    }
-                }
-            });
-
-            chatConnection.on('close', () => {
-                ui.chatInput.disabled = true;
-                ui.chatSubmit.disabled = true;
-                appendMessage(`System: ${remoteUserName} has disconnected.`, 'system');
-            });
-        }
-
         function sendChatMessage(e) {
             e.preventDefault();
-            if (!chatConnection || !chatConnection.open) {
-                showToast("Chat not connected yet.");
-                return;
-            }
-
             const text = ui.chatInput.value.trim();
             if (!text) return;
 
-            // Send via PeerJS
-            chatConnection.send({ type: 'chat', text: text });
-            
-            // Show locally
-            appendMessage(text, 'me', localUserName);
-            ui.chatInput.value = '';
+            let sentToAnyone = false;
+
+            // Broadcast to all active data connections
+            Object.values(peers).forEach(p => {
+                if (p.data && p.data.open) {
+                    p.data.send({ type: 'chat', text: text });
+                    sentToAnyone = true;
+                }
+            });
+
+            if (sentToAnyone) {
+                appendMessage(text, 'me', localUserName);
+                ui.chatInput.value = '';
+            } else {
+                showToast("No one else is in the meeting to receive this message.");
+            }
         }
 
         function appendMessage(text, sender, senderName = '') {
@@ -733,10 +837,9 @@
                 return;
             }
 
-            // Open or switch panel
             ui.sidebar.classList.remove('translate-x-full', 'sm:w-0');
             ui.sidebar.classList.add('sm:w-80');
-            ui.videoArea.classList.add('sm:pr-80'); // Adjust main video area
+            ui.videoArea.classList.add('sm:pr-80');
             
             activeSidebar = panel;
 
@@ -745,15 +848,13 @@
                 ui.chatContent.classList.remove('hidden');
                 ui.participantsContent.classList.add('hidden');
                 
-                // Clear unread
                 unreadMessages = 0;
                 ui.chatBadge.classList.add('hidden');
                 
-                // Scroll to bottom
                 ui.chatMessages.scrollTop = ui.chatMessages.scrollHeight;
                 setTimeout(() => ui.chatInput.focus(), 300);
             } else if (panel === 'participants') {
-                ui.sidebarTitle.innerText = 'Participants';
+                ui.sidebarTitle.innerText = `Participants (${Object.keys(peers).length + 1})`;
                 ui.participantsContent.classList.remove('hidden');
                 ui.chatContent.classList.add('hidden');
             }
@@ -771,12 +872,15 @@
             activeSidebar = null;
         }
 
-        function updateParticipantsList(isHost, remoteId = null) {
+        function updateParticipantsList() {
+            const isHost = (peer && peer.id === activeRoomId);
+            const totalCount = Object.keys(peers).length + 1;
+            
             let html = `
                 <div class="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5">
                     <div class="flex items-center gap-3">
                         <div class="w-10 h-10 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold">${localUserName.charAt(0).toUpperCase()}</div>
-                        <span class="text-white font-medium text-sm">${localUserName} (You)</span>
+                        <span class="text-white font-medium text-sm">${localUserName} (You) ${isHost ? '👑' : ''}</span>
                     </div>
                     <div class="flex gap-2 text-gray-400 text-xs">
                         <i class="fas ${isMicMuted ? 'fa-microphone-slash text-red-400' : 'fa-microphone'}"></i>
@@ -785,30 +889,35 @@
                 </div>
             `;
 
-            let count = 1;
-
-            if (remoteId) {
-                count++;
+            Object.keys(peers).forEach(pid => {
+                const p = peers[pid];
+                const pName = p.name || 'Connecting...';
+                const isPeerHost = (pid === activeRoomId);
+                
                 html += `
                     <div class="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5 mt-2">
                         <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-full bg-gray-700 text-gray-300 flex items-center justify-center font-bold">${remoteUserName.charAt(0).toUpperCase()}</div>
-                            <span class="text-white font-medium text-sm">${remoteUserName}</span>
+                            <div class="w-10 h-10 rounded-full bg-gray-700 text-gray-300 flex items-center justify-center font-bold">${pName.charAt(0).toUpperCase()}</div>
+                            <span class="text-white font-medium text-sm w-32 truncate">${pName} ${isPeerHost ? '👑' : ''}</span>
                         </div>
                         <div class="flex gap-2 text-green-400 text-xs">
                             <i class="fas fa-link" title="Connected"></i>
                         </div>
                     </div>
                 `;
-            }
+            });
 
             ui.participantsList.innerHTML = html;
             
-            if (count > 1) {
-                ui.participantsBadge.innerText = count;
+            ui.participantsBadge.innerText = totalCount;
+            if (totalCount > 1) {
                 ui.participantsBadge.classList.remove('hidden');
             } else {
                 ui.participantsBadge.classList.add('hidden');
+            }
+
+            if (activeSidebar === 'participants') {
+                ui.sidebarTitle.innerText = `Participants (${totalCount})`;
             }
         }
 
@@ -828,7 +937,7 @@
                 ui.btnMic.classList.add('text-white');
                 ui.localMicIndicator.classList.add('hidden');
             }
-            updateParticipantsList(activeRoomId !== '', remotePeerId);
+            updateParticipantsList();
         }
 
         function updateVideoUI() {
@@ -845,7 +954,7 @@
                 ui.btnVideo.classList.remove('text-red-400');
                 ui.btnVideo.classList.add('text-white');
             }
-            updateParticipantsList(activeRoomId !== '', remotePeerId);
+            updateParticipantsList();
         }
 
         function toggleMic() {
@@ -876,38 +985,23 @@
             }
         }
 
-        function resetRemoteVideo() {
-            videos.remote.classList.remove('opacity-100');
-            videos.remote.classList.add('opacity-0');
-            ui.remotePlaceholder.classList.remove('hidden');
-            setTimeout(() => { videos.remote.srcObject = null; }, 1000);
-        }
-
         function endCall() {
             if (isScreenSharing) stopScreenShare();
 
-            if (chatConnection) {
-                chatConnection.close();
-                chatConnection = null;
-            }
-            if (currentCall) {
-                currentCall.close();
-                currentCall = null;
-            }
+            // Destroy all peer connections
+            Object.keys(peers).forEach(pid => removePeer(pid));
+            
             if (peer) {
                 peer.destroy();
                 peer = null;
             }
             
-            remotePeerId = null;
-            remoteUserName = 'Guest';
-            resetRemoteVideo();
             closeSidebar();
             
-            // Clear Chat
             ui.chatMessages.innerHTML = '<div class="text-center text-xs text-gray-500 my-2">Welcome to the secure chat. Messages are peer-to-peer and not stored.</div>';
+            ui.chatInput.disabled = true;
+            ui.chatSubmit.disabled = true;
             
-            // Reset URL if joined via link
             window.history.replaceState({}, document.title, window.location.pathname);
             
             document.getElementById('join-id-input').value = '';
