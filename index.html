@@ -1,223 +1,566 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Mini Meet</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuickMeet - WebRTC Video Call</title>
+    
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- PeerJS for WebRTC -->
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 
-<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-
-<style>
-
-body{
-margin:0;
-font-family:Arial,Helvetica,sans-serif;
-background:#0f172a;
-color:white;
-display:flex;
-flex-direction:column;
-height:100vh;
-}
-
-header{
-padding:15px;
-text-align:center;
-font-size:20px;
-background:#111827;
-}
-
-#joinScreen{
-display:flex;
-flex-direction:column;
-align-items:center;
-justify-content:center;
-flex:1;
-gap:15px;
-}
-
-input{
-padding:10px;
-border-radius:8px;
-border:none;
-width:220px;
-}
-
-button{
-padding:10px 16px;
-border:none;
-border-radius:8px;
-background:#3b82f6;
-color:white;
-cursor:pointer;
-font-size:14px;
-}
-
-button:hover{
-background:#2563eb;
-}
-
-#callScreen{
-display:none;
-flex-direction:column;
-height:100%;
-}
-
-#videos{
-flex:1;
-display:flex;
-justify-content:center;
-align-items:center;
-gap:20px;
-padding:20px;
-}
-
-video{
-width:45%;
-max-width:500px;
-border-radius:12px;
-background:black;
-}
-
-#controls{
-display:flex;
-justify-content:center;
-gap:15px;
-padding:15px;
-background:#111827;
-}
-
-.control-btn{
-background:#1f2937;
-}
-
-.control-btn:hover{
-background:#374151;
-}
-
-.leave{
-background:#ef4444;
-}
-
-.leave:hover{
-background:#dc2626;
-}
-
-</style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom styles for video elements */
+        #remote-video {
+            object-fit: cover;
+            transform: scaleX(-1); /* Mirror effect */
+        }
+        #local-video {
+            object-fit: cover;
+            transform: scaleX(-1); /* Mirror effect */
+            transition: all 0.3s ease;
+        }
+        .hide-scroll::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
 </head>
+<body class="bg-gray-50 text-gray-800 font-sans h-screen overflow-hidden selection:bg-blue-200">
 
-<body>
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed top-5 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-full shadow-lg z-50 transition-all duration-300 opacity-0 pointer-events-none translate-y-[-20px]">
+        <span id="toast-message">Message</span>
+    </div>
 
-<header>Mini Meet</header>
+    <!-- SETUP SCREEN (Landing Page) -->
+    <div id="setup-screen" class="h-full flex flex-col items-center justify-center p-6 transition-all duration-500">
+        <div class="text-center mb-10">
+            <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 text-blue-600 mb-4">
+                <i class="fas fa-video text-3xl"></i>
+            </div>
+            <h1 class="text-4xl font-bold tracking-tight text-gray-900 mb-2">QuickMeet</h1>
+            <p class="text-gray-500 max-w-md mx-auto">High quality, secure, peer-to-peer video calls right in your browser. No sign-ups required.</p>
+        </div>
 
-<div id="joinScreen">
+        <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md border border-gray-100">
+            
+            <!-- Camera Preview -->
+            <div class="relative w-full aspect-video bg-gray-900 rounded-xl overflow-hidden mb-6 shadow-inner">
+                <video id="preview-video" class="w-full h-full object-cover transform scale-x-[-1]" autoplay muted playsinline></video>
+                <div id="preview-overlay" class="absolute inset-0 flex flex-col items-center justify-center text-white bg-gray-900/80">
+                    <i class="fas fa-camera mb-2 text-2xl opacity-70"></i>
+                    <span class="text-sm font-medium">Requesting camera access...</span>
+                </div>
+            </div>
 
-<input id="roomInput" placeholder="Enter Room ID">
-<button onclick="joinRoom()">Join Room</button>
+            <div class="space-y-4">
+                <button onclick="createRoom()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-xl transition-colors duration-200 flex items-center justify-center gap-2">
+                    <i class="fas fa-plus"></i> New Meeting
+                </button>
+                
+                <div class="relative flex items-center py-2">
+                    <div class="flex-grow border-t border-gray-200"></div>
+                    <span class="flex-shrink-0 mx-4 text-gray-400 text-sm font-medium">OR</span>
+                    <div class="flex-grow border-t border-gray-200"></div>
+                </div>
 
-</div>
+                <div class="flex gap-2">
+                    <input type="text" id="join-id-input" placeholder="Enter Room ID" class="flex-grow bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-blue-500 focus:border-blue-500 block p-3 outline-none transition-colors">
+                    <button onclick="joinRoom()" class="bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold py-3 px-6 rounded-xl transition-colors border border-gray-200">
+                        Join
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
+    <!-- CALL SCREEN -->
+    <div id="call-screen" class="h-full w-full bg-gray-900 relative hidden flex flex-col">
+        
+        <!-- Header / Info Bar -->
+        <div class="absolute top-0 left-0 w-full p-4 flex justify-between items-center z-20 bg-gradient-to-b from-black/60 to-transparent">
+            <div class="text-white font-bold text-lg flex items-center gap-2">
+                <i class="fas fa-shield-alt text-green-400 text-sm"></i> Secure Call
+            </div>
+            
+            <!-- Room ID Display (Visible to Host) -->
+            <div id="room-info" class="hidden items-center bg-gray-800/80 backdrop-blur-sm rounded-lg pr-1 pl-4 py-1 border border-gray-700">
+                <span class="text-gray-300 text-sm mr-3 font-medium">Room ID: <span id="display-room-id" class="text-white font-mono tracking-wider ml-1">...</span></span>
+                <button onclick="copyRoomId()" class="p-2 hover:bg-gray-700 rounded-md text-gray-300 transition-colors" title="Copy Room ID">
+                    <i class="fas fa-copy"></i>
+                </button>
+            </div>
+        </div>
 
-<div id="callScreen">
+        <!-- Waiting Message -->
+        <div id="waiting-message" class="absolute inset-0 flex flex-col items-center justify-center z-10 hidden">
+            <div class="bg-gray-800/80 backdrop-blur-md p-8 rounded-2xl text-center border border-gray-700 shadow-2xl max-w-sm">
+                <div class="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
+                <h2 class="text-2xl font-bold text-white mb-2">Waiting for others</h2>
+                <p class="text-gray-400 mb-6 text-sm">Share the Room ID below with the person you want to meet.</p>
+                
+                <div class="flex items-center justify-between bg-gray-900 rounded-lg p-3 border border-gray-600 mb-2">
+                    <span id="waiting-room-id" class="text-white font-mono text-lg tracking-widest font-bold"></span>
+                </div>
+                <button onclick="copyRoomId()" class="text-blue-400 hover:text-blue-300 text-sm font-medium w-full py-2 hover:bg-gray-700/50 rounded-lg transition">
+                    <i class="fas fa-copy mr-1"></i> Copy Room ID
+                </button>
+            </div>
+        </div>
 
-<div id="videos">
-<video id="myVideo" autoplay muted playsinline></video>
-<video id="userVideo" autoplay playsinline></video>
-</div>
+        <!-- Main Video Area -->
+        <div class="relative flex-grow w-full h-full overflow-hidden bg-black flex justify-center items-center">
+            <!-- Remote Video (Big) -->
+            <video id="remote-video" class="w-full h-full opacity-0 transition-opacity duration-700" autoplay playsinline></video>
+            
+            <!-- Local Video (Picture in Picture) -->
+            <div id="local-video-container" class="absolute bottom-24 right-4 sm:bottom-6 sm:right-6 w-32 sm:w-48 aspect-video bg-gray-800 rounded-xl overflow-hidden shadow-2xl border-2 border-gray-700/50 z-20 cursor-move group hover:border-gray-500 transition-colors">
+                <video id="local-video" class="w-full h-full" autoplay muted playsinline></video>
+                <div class="absolute bottom-2 left-2 flex gap-1">
+                    <div id="local-mic-indicator" class="bg-black/60 p-1 rounded-md hidden">
+                        <i class="fas fa-microphone-slash text-red-500 text-xs"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-<div id="controls">
-<button class="control-btn" onclick="toggleMute()">Mute</button>
-<button class="control-btn" onclick="toggleCamera()">Camera Off</button>
-<button class="leave" onclick="leaveCall()">Leave</button>
-</div>
+        <!-- Controls Bar -->
+        <div class="absolute bottom-0 left-0 w-full p-4 sm:p-6 flex justify-center items-center z-30 bg-gradient-to-t from-black/80 to-transparent">
+            <div class="flex items-center space-x-3 sm:space-x-5 bg-gray-800/90 backdrop-blur-md px-6 py-3 rounded-2xl border border-gray-700 shadow-2xl">
+                
+                <!-- Mic Toggle -->
+                <button id="btn-mic" onclick="toggleMic()" class="w-12 h-12 rounded-full bg-gray-600 hover:bg-gray-500 text-white flex items-center justify-center transition-all shadow-lg focus:outline-none focus:ring-2 focus:ring-gray-400">
+                    <i class="fas fa-microphone"></i>
+                </button>
+                
+                <!-- Camera Toggle -->
+                <button id="btn-video" onclick="toggleVideo()" class="w-12 h-12 rounded-full bg-gray-600 hover:bg-gray-500 text-white flex items-center justify-center transition-all shadow-lg focus:outline-none focus:ring-2 focus:ring-gray-400">
+                    <i class="fas fa-video"></i>
+                </button>
+                
+                <div class="w-px h-8 bg-gray-600 mx-2"></div>
+                
+                <!-- End Call -->
+                <button onclick="endCall()" class="w-14 h-10 px-4 rounded-xl bg-red-500 hover:bg-red-600 text-white flex items-center justify-center transition-all shadow-lg focus:outline-none focus:ring-2 focus:ring-red-400 group">
+                    <i class="fas fa-phone-slash group-hover:scale-110 transition-transform"></i>
+                </button>
+            </div>
+        </div>
 
-</div>
+    </div>
 
+    <script>
+        // --- State Variables ---
+        let peer = null;
+        let localStream = null;
+        let currentCall = null;
+        let isMicMuted = false;
+        let isCamOff = false;
+        let activeRoomId = '';
+        let isDummyStream = false;
 
-<script>
+        // --- DOM Elements ---
+        const screens = {
+            setup: document.getElementById('setup-screen'),
+            call: document.getElementById('call-screen')
+        };
+        const videos = {
+            preview: document.getElementById('preview-video'),
+            local: document.getElementById('local-video'),
+            remote: document.getElementById('remote-video')
+        };
+        const ui = {
+            previewOverlay: document.getElementById('preview-overlay'),
+            waitingMessage: document.getElementById('waiting-message'),
+            roomInfo: document.getElementById('room-info'),
+            displayRoomId: document.getElementById('display-room-id'),
+            waitingRoomId: document.getElementById('waiting-room-id'),
+            btnMic: document.getElementById('btn-mic'),
+            btnVideo: document.getElementById('btn-video'),
+            localMicIndicator: document.getElementById('local-mic-indicator')
+        };
 
-let peer
-let myStream
-let currentCall
-let muted=false
-let cameraOff=false
+        // --- Initialization ---
 
-const myVideo=document.getElementById("myVideo")
-const userVideo=document.getElementById("userVideo")
+        function createDummyStream() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 640;
+            canvas.height = 480;
+            const ctx = canvas.getContext('2d');
+            
+            setInterval(() => {
+                ctx.fillStyle = '#1f2937'; // bg-gray-800
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#9ca3af'; // text-gray-400
+                ctx.font = '24px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('No Camera Detected', canvas.width/2, canvas.height/2);
+                
+                // Animate a small dot to force frame updates
+                const time = Date.now() / 1000;
+                const x = canvas.width/2 + Math.sin(time) * 50;
+                const y = canvas.height/2 + 40;
+                ctx.fillStyle = '#ef4444'; // red-500
+                ctx.beginPath();
+                ctx.arc(x, y, 5, 0, Math.PI*2);
+                ctx.fill();
+            }, 1000/15); // 15 fps
+            
+            const videoStream = canvas.captureStream(15);
+            const tracks = [videoStream.getVideoTracks()[0]];
+            
+            // Dummy audio
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (AudioContext) {
+                    const audioCtx = new AudioContext();
+                    const dest = audioCtx.createMediaStreamDestination();
+                    if (dest.stream.getAudioTracks().length > 0) {
+                        tracks.push(dest.stream.getAudioTracks()[0]);
+                    }
+                }
+            } catch (e) {
+                console.warn("Could not create dummy audio track", e);
+            }
+            
+            return new MediaStream(tracks);
+        }
 
-async function joinRoom(){
+        // Request camera permissions on load to show preview
+        async function initializeMedia() {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                console.warn("Media devices API not available.");
+                showToast("Browser does not support media devices. Using fallback.");
+                try {
+                    localStream = createDummyStream();
+                    isDummyStream = true;
+                    isCamOff = true;
+                    isMicMuted = true;
+                    updateVideoUI();
+                    updateMicUI();
+                } catch (e) {
+                    ui.previewOverlay.innerHTML = '<i class="fas fa-ban mb-2 text-2xl text-red-400"></i><span class="text-sm font-medium">Media API unavailable</span>';
+                    return;
+                }
+            } else {
+                try {
+                    // Try to get both video and audio first
+                    localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                } catch (err) {
+                    console.warn("Could not get both video and audio. Trying fallbacks...", err);
+                    
+                    try {
+                        // Fallback 1: Try video only (in case mic is missing)
+                        localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+                        isMicMuted = true;
+                        updateMicUI();
+                        showToast("Microphone not found. Proceeding with video only.");
+                    } catch (err2) {
+                        try {
+                            // Fallback 2: Try audio only (in case camera is missing)
+                            localStream = await navigator.mediaDevices.getUserMedia({ video: false, audio: true });
+                            isCamOff = true;
+                            updateVideoUI();
+                            showToast("Camera not found. Proceeding with audio only.");
+                        } catch (err3) {
+                            // All attempts failed
+                            console.warn("Physical devices not found. Switching to simulated stream.");
+                            showToast("No camera/mic found. Using simulated stream.");
+                            try {
+                                localStream = createDummyStream();
+                                isDummyStream = true;
+                                isCamOff = true;
+                                isMicMuted = true;
+                                updateVideoUI();
+                                updateMicUI();
+                            } catch (e) {
+                                console.warn("Failed to create dummy stream", e);
+                                ui.previewOverlay.innerHTML = '<i class="fas fa-exclamation-triangle mb-2 text-2xl text-red-400"></i><span class="text-sm font-medium text-center px-4">Camera/Mic not found or access denied.<br>Check your device settings.</span>';
+                                return; // Stop initialization
+                            }
+                        }
+                    }
+                }
+            }
 
-const room=document.getElementById("roomInput").value.trim()
+            // If we successfully got a stream (video, audio, or both)
+            if (localStream) {
+                videos.preview.srcObject = localStream;
+                videos.local.srcObject = localStream;
+                ui.previewOverlay.classList.add('hidden'); // Hide "requesting" overlay
+            }
+        }
 
-if(!room) return alert("Enter room ID")
+        window.addEventListener('load', initializeMedia);
 
-document.getElementById("joinScreen").style.display="none"
-document.getElementById("callScreen").style.display="flex"
+        // --- Core WebRTC / PeerJS Logic ---
 
-myStream = await navigator.mediaDevices.getUserMedia({
-video:true,
-audio:true
-})
+        // 1. Host creates a new room
+        function createRoom() {
+            if (!localStream) {
+                showToast("Please allow camera/microphone access first.");
+                return;
+            }
 
-myVideo.srcObject=myStream
+            switchScreen('call');
+            showToast("Generating Room ID...");
 
-peer = new Peer(room)
+            // Initialize PeerJS
+            peer = new Peer({
+                config: {'iceServers': [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:global.stun.twilio.com:3478' }
+                ]}
+            });
 
-peer.on("call", call => {
+            peer.on('open', (id) => {
+                activeRoomId = id;
+                ui.displayRoomId.innerText = id;
+                ui.waitingRoomId.innerText = id;
+                ui.roomInfo.classList.remove('hidden');
+                ui.roomInfo.classList.add('flex');
+                ui.waitingMessage.classList.remove('hidden');
+                showToast("Room created successfully!");
+            });
 
-call.answer(myStream)
+            // Listen for incoming calls
+            peer.on('call', (call) => {
+                // Answer the call automatically
+                call.answer(localStream);
+                setupCallEvents(call);
+                
+                // Hide waiting messages
+                ui.waitingMessage.classList.add('hidden');
+                showToast("Someone joined the room!");
+            });
 
-call.on("stream", stream=>{
-userVideo.srcObject=stream
-})
+            handlePeerErrors();
+        }
 
-currentCall=call
+        // 2. Guest joins an existing room
+        function joinRoom() {
+            const inputId = document.getElementById('join-id-input').value.trim();
+            if (!inputId) {
+                showToast("Please enter a Room ID");
+                return;
+            }
+            if (!localStream) {
+                showToast("Please allow camera/microphone access first.");
+                return;
+            }
 
-})
+            switchScreen('call');
+            ui.roomInfo.classList.add('hidden'); // Guests don't need to see/copy ID usually
+            ui.waitingMessage.classList.add('hidden');
+            showToast("Connecting to room...");
 
-peer.on("open", id=>{
+            // Initialize PeerJS
+            peer = new Peer({
+                config: {'iceServers': [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:global.stun.twilio.com:3478' }
+                ]}
+            });
 
-if(id!==room){
+            peer.on('open', () => {
+                // Call the host's ID
+                const call = peer.call(inputId, localStream);
+                setupCallEvents(call);
+            });
 
-const call=peer.call(room,myStream)
+            handlePeerErrors();
+        }
 
-call.on("stream",stream=>{
-userVideo.srcObject=stream
-})
+        // 3. Setup event listeners for the active call
+        function setupCallEvents(call) {
+            if (currentCall) currentCall.close(); // Close any existing call
+            currentCall = call;
 
-currentCall=call
+            call.on('stream', (remoteStream) => {
+                // Attach remote stream to the big video element
+                videos.remote.srcObject = remoteStream;
+                // Fade in video once data starts loading
+                videos.remote.onloadedmetadata = () => {
+                    videos.remote.classList.remove('opacity-0');
+                    videos.remote.classList.add('opacity-100');
+                };
+            });
 
-}
+            call.on('close', () => {
+                showToast("The other person left the call.");
+                endCall();
+            });
 
-})
+            call.on('error', (err) => {
+                console.error("Call error:", err);
+                showToast("Call connection error.");
+                endCall();
+            });
+        }
 
-}
+        function handlePeerErrors() {
+            peer.on('error', (err) => {
+                console.error("Peer error:", err);
+                if (err.type === 'peer-unavailable') {
+                    showToast("Room ID not found. The host may have left.");
+                } else {
+                    showToast("Connection error occurred.");
+                }
+                endCall();
+            });
+        }
 
-function toggleMute(){
+        // --- UI Controls ---
 
-muted=!muted
+        function updateMicUI() {
+            if (isMicMuted) {
+                ui.btnMic.innerHTML = '<i class="fas fa-microphone-slash"></i>';
+                ui.btnMic.classList.replace('bg-gray-600', 'bg-red-500');
+                ui.btnMic.classList.replace('hover:bg-gray-500', 'hover:bg-red-600');
+                ui.localMicIndicator.classList.remove('hidden');
+            } else {
+                ui.btnMic.innerHTML = '<i class="fas fa-microphone"></i>';
+                ui.btnMic.classList.replace('bg-red-500', 'bg-gray-600');
+                ui.btnMic.classList.replace('hover:bg-red-600', 'hover:bg-gray-500');
+                ui.localMicIndicator.classList.add('hidden');
+            }
+        }
 
-myStream.getAudioTracks()[0].enabled=!muted
+        function updateVideoUI() {
+            if (isCamOff) {
+                ui.btnVideo.innerHTML = '<i class="fas fa-video-slash"></i>';
+                ui.btnVideo.classList.replace('bg-gray-600', 'bg-red-500');
+                ui.btnVideo.classList.replace('hover:bg-gray-500', 'hover:bg-red-600');
+            } else {
+                ui.btnVideo.innerHTML = '<i class="fas fa-video"></i>';
+                ui.btnVideo.classList.replace('bg-red-500', 'bg-gray-600');
+                ui.btnVideo.classList.replace('hover:bg-red-600', 'hover:bg-gray-500');
+            }
+        }
 
-}
+        function toggleMic() {
+            if (!localStream) return;
+            if (isDummyStream) {
+                showToast("No physical microphone connected.");
+                return;
+            }
+            const audioTracks = localStream.getAudioTracks();
+            
+            if (audioTracks.length > 0) {
+                isMicMuted = !isMicMuted;
+                audioTracks[0].enabled = !isMicMuted;
+                updateMicUI();
+            } else {
+                showToast("No microphone available on this device.");
+            }
+        }
 
-function toggleCamera(){
+        function toggleVideo() {
+            if (!localStream) return;
+            if (isDummyStream) {
+                showToast("No physical camera connected.");
+                return;
+            }
+            const videoTracks = localStream.getVideoTracks();
+            
+            if (videoTracks.length > 0) {
+                isCamOff = !isCamOff;
+                videoTracks[0].enabled = !isCamOff;
+                updateVideoUI();
+            } else {
+                showToast("No camera available on this device.");
+            }
+        }
 
-cameraOff=!cameraOff
+        function endCall() {
+            // Clean up connections
+            if (currentCall) {
+                currentCall.close();
+                currentCall = null;
+            }
+            if (peer) {
+                peer.destroy();
+                peer = null;
+            }
+            
+            // Reset remote video
+            videos.remote.classList.remove('opacity-100');
+            videos.remote.classList.add('opacity-0');
+            setTimeout(() => { videos.remote.srcObject = null; }, 700);
+            
+            // Reset input
+            document.getElementById('join-id-input').value = '';
+            
+            // Go back to setup screen
+            switchScreen('setup');
+        }
 
-myStream.getVideoTracks()[0].enabled=!cameraOff
+        // --- Utility Functions ---
 
-}
+        function switchScreen(screenName) {
+            if (screenName === 'call') {
+                screens.setup.classList.add('hidden');
+                screens.call.classList.remove('hidden');
+            } else {
+                screens.call.classList.add('hidden');
+                screens.setup.classList.remove('hidden');
+                ui.waitingMessage.classList.add('hidden');
+            }
+        }
 
-function leaveCall(){
+        function copyRoomId() {
+            if (!activeRoomId) return;
+            
+            // Universal fallback for clipboard copy
+            const tempInput = document.createElement("input");
+            tempInput.value = activeRoomId;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            
+            try {
+                document.execCommand("copy");
+                showToast("Room ID copied to clipboard!");
+            } catch (err) {
+                showToast("Failed to copy ID.");
+            }
+            
+            document.body.removeChild(tempInput);
+        }
 
-if(currentCall) currentCall.close()
+        let toastTimeout;
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-message').innerText = message;
+            
+            toast.classList.remove('opacity-0', 'translate-y-[-20px]');
+            toast.classList.add('opacity-100', 'translate-y-0');
+            
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.remove('opacity-100', 'translate-y-0');
+                toast.classList.add('opacity-0', 'translate-y-[-20px]');
+            }, 3000);
+        }
 
-if(peer) peer.destroy()
-
-location.reload()
-
-}
-
-</script>
-
+    </script>
 </body>
 </html>
