@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
     <!-- PeerJS for WebRTC -->
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
@@ -25,7 +25,14 @@
                         sans: ['"Plus Jakarta Sans"', 'sans-serif'],
                     },
                     animation: {
-                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        }
                     }
                 }
             }
@@ -45,236 +52,258 @@
             transition: all 0.3s ease;
         }
         .hide-scroll::-webkit-scrollbar {
-            width: 6px;
+            width: 5px;
         }
         .hide-scroll::-webkit-scrollbar-track {
             background: transparent;
         }
         .hide-scroll::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.15);
             border-radius: 10px;
         }
+        .hide-scroll::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
         .glass-panel {
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.4);
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
         }
         .glass-panel-dark {
-            background: rgba(17, 24, 39, 0.65);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
         }
         .chat-bubble-me {
-            background: linear-gradient(135deg, #6366f1 0%, #3b82f6 100%);
+            background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%);
             border-bottom-right-radius: 4px;
         }
         .chat-bubble-them {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.05);
             border-bottom-left-radius: 4px;
+        }
+        input:focus {
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
         }
     </style>
 </head>
-<body class="bg-gradient-to-br from-indigo-50 via-blue-50 to-purple-50 text-gray-800 font-sans h-screen overflow-hidden selection:bg-indigo-200">
+<body class="bg-slate-50 text-slate-800 font-sans h-screen overflow-hidden selection:bg-indigo-200">
 
     <!-- Toast Notification -->
-    <div id="toast" class="fixed top-6 left-1/2 transform -translate-x-1/2 glass-panel-dark text-white px-6 py-3 rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.12)] z-50 transition-all duration-300 opacity-0 pointer-events-none translate-y-[-20px] flex items-center gap-3">
-        <i class="fas fa-info-circle text-indigo-400"></i>
+    <div id="toast" class="fixed top-8 left-1/2 transform -translate-x-1/2 glass-panel-dark text-white px-6 py-3.5 rounded-full shadow-2xl z-50 transition-all duration-400 opacity-0 pointer-events-none translate-y-[-20px] flex items-center gap-3 border border-white/10">
+        <i class="fas fa-check-circle text-indigo-400 text-lg"></i>
         <span id="toast-message" class="font-medium text-sm tracking-wide">Message</span>
     </div>
 
     <!-- SETUP SCREEN (Landing Page) -->
-    <div id="setup-screen" class="h-full flex flex-col items-center justify-center p-6 transition-all duration-500 relative overflow-hidden">
+    <div id="setup-screen" class="h-full flex flex-col items-center justify-center p-6 transition-all duration-500 relative overflow-hidden bg-gradient-to-br from-indigo-50 via-white to-purple-50">
         
         <!-- Decorative Background Elements -->
-        <div class="absolute top-[-10%] left-[-10%] w-96 h-96 bg-blue-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse-slow"></div>
-        <div class="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse-slow" style="animation-delay: 1s;"></div>
+        <div class="absolute top-[0%] left-[-5%] w-[40rem] h-[40rem] bg-indigo-200 rounded-full mix-blend-multiply filter blur-[100px] opacity-40 animate-pulse-slow"></div>
+        <div class="absolute bottom-[-10%] right-[-5%] w-[40rem] h-[40rem] bg-fuchsia-200 rounded-full mix-blend-multiply filter blur-[100px] opacity-40 animate-pulse-slow" style="animation-delay: 2s;"></div>
+        <div class="absolute top-[20%] right-[20%] w-64 h-64 bg-blue-200 rounded-full mix-blend-multiply filter blur-[80px] opacity-50 animate-float"></div>
 
-        <div class="text-center mb-8 relative z-10">
-            <div class="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-tr from-indigo-600 to-blue-500 text-white mb-6 shadow-xl shadow-indigo-500/30 transform rotate-3 hover:rotate-0 transition-transform duration-300">
-                <i class="fas fa-video text-4xl"></i>
+        <div class="text-center mb-10 relative z-10 animate-float" style="animation-duration: 8s;">
+            <div class="inline-flex items-center justify-center w-24 h-24 rounded-[2rem] bg-gradient-to-br from-indigo-500 to-blue-600 text-white mb-6 shadow-2xl shadow-indigo-500/40 transform rotate-3 hover:rotate-0 transition-transform duration-500 border border-white/20">
+                <i class="fas fa-video text-5xl"></i>
             </div>
-            <h1 class="text-5xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-gray-900 to-gray-600 mb-3">QuickMeet</h1>
-            <p class="text-gray-500 max-w-md mx-auto text-lg">High quality, secure, group video calls right in your browser. Up to 20 users!</p>
+            <h1 class="text-6xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-slate-900 via-indigo-900 to-slate-800 mb-4 pb-1">QuickMeet</h1>
+            <p class="text-slate-500 max-w-md mx-auto text-lg font-medium leading-relaxed">Secure, high-quality group video calls right in your browser. Connect with up to 20 people instantly.</p>
         </div>
 
-        <div class="glass-panel p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] w-full max-w-md relative z-10">
+        <div class="glass-panel p-10 rounded-[2.5rem] w-full max-w-[440px] relative z-10">
             
             <!-- Camera Preview -->
-            <div class="relative w-full aspect-video bg-gray-900 rounded-2xl overflow-hidden mb-8 shadow-inner border-[3px] border-white/50">
-                <video id="preview-video" class="w-full h-full object-cover transform scale-x-[-1]" autoplay muted playsinline></video>
-                <div id="preview-overlay" class="absolute inset-0 flex flex-col items-center justify-center text-white bg-gray-900/80 backdrop-blur-sm">
-                    <div class="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-                    <span class="text-sm font-medium tracking-wide">Accessing camera...</span>
+            <div class="relative w-full aspect-video bg-slate-900 rounded-3xl overflow-hidden mb-8 shadow-inner border-[4px] border-white/60 group">
+                <video id="preview-video" class="w-full h-full object-cover transform scale-x-[-1] transition-transform duration-700 group-hover:scale-105" autoplay muted playsinline></video>
+                <div id="preview-overlay" class="absolute inset-0 flex flex-col items-center justify-center text-white bg-slate-900/80 backdrop-blur-md transition-opacity duration-300">
+                    <div class="w-12 h-12 border-4 border-indigo-400 border-t-transparent rounded-full animate-spin mb-4 shadow-[0_0_15px_rgba(99,102,241,0.5)]"></div>
+                    <span class="text-sm font-semibold tracking-wider uppercase text-indigo-200">Accessing Camera</span>
                 </div>
             </div>
 
             <div class="space-y-5">
                 <!-- User Name Input -->
-                <div class="relative w-full">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <i class="fas fa-user text-gray-400"></i>
+                <div class="relative w-full group">
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors group-focus-within:text-indigo-500">
+                        <i class="fas fa-user text-slate-400 group-focus-within:text-indigo-500 transition-colors"></i>
                     </div>
-                    <input type="text" id="user-name-input" placeholder="Your Name" class="w-full bg-white/50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 block pl-10 p-3.5 outline-none transition-all placeholder-gray-400 shadow-sm">
+                    <input type="text" id="user-name-input" placeholder="What's your name?" class="w-full bg-white/60 border border-white text-slate-800 text-sm font-medium rounded-2xl block pl-12 p-4 outline-none transition-all placeholder-slate-400 focus:bg-white hover:bg-white/80">
                 </div>
 
-                <button onclick="createRoom()" class="w-full bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white font-bold py-3.5 px-4 rounded-xl transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg hover:shadow-indigo-500/30 flex items-center justify-center gap-3">
-                    <i class="fas fa-video"></i> Start New Meeting
+                <button onclick="createRoom()" class="w-full bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white font-bold py-4 px-4 rounded-2xl transition-all duration-300 transform hover:-translate-y-1 hover:shadow-[0_10px_25px_-5px_rgba(79,70,229,0.4)] flex items-center justify-center gap-3">
+                    <i class="fas fa-video text-lg"></i> Start New Meeting
                 </button>
                 
-                <div class="relative flex items-center py-1">
-                    <div class="flex-grow border-t border-gray-200"></div>
-                    <span class="flex-shrink-0 mx-4 text-gray-400 text-xs font-bold uppercase tracking-wider">or join existing</span>
-                    <div class="flex-grow border-t border-gray-200"></div>
+                <div class="relative flex items-center py-2">
+                    <div class="flex-grow border-t border-slate-200"></div>
+                    <span class="flex-shrink-0 mx-4 text-slate-400 text-[11px] font-bold uppercase tracking-widest">Or join existing</span>
+                    <div class="flex-grow border-t border-slate-200"></div>
                 </div>
 
                 <div class="flex gap-3">
-                    <div class="relative flex-grow">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <i class="fas fa-keyboard text-gray-400"></i>
+                    <div class="relative flex-grow group">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <i class="fas fa-link text-slate-400 group-focus-within:text-indigo-500 transition-colors"></i>
                         </div>
-                        <input type="text" id="join-id-input" placeholder="Enter Room ID or Link" class="w-full bg-white/50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 block pl-10 p-3.5 outline-none transition-all placeholder-gray-400 shadow-sm">
+                        <input type="text" id="join-id-input" placeholder="Paste link or ID" class="w-full bg-white/60 border border-white text-slate-800 text-sm font-medium rounded-2xl block pl-12 p-4 outline-none transition-all placeholder-slate-400 focus:bg-white hover:bg-white/80">
                     </div>
-                    <button onclick="joinRoom()" class="bg-white hover:bg-gray-50 text-indigo-600 font-bold py-3.5 px-6 rounded-xl transition-all duration-300 border border-gray-200 shadow-sm hover:shadow-md transform hover:-translate-y-0.5">
+                    <button onclick="joinRoom()" class="bg-white hover:bg-slate-50 text-indigo-600 font-bold py-4 px-8 rounded-2xl transition-all duration-300 border border-white shadow-sm hover:shadow-md transform hover:-translate-y-1">
                         Join
                     </button>
                 </div>
             </div>
         </div>
         
-        <p class="mt-8 text-sm text-gray-400 font-medium relative z-10">No sign-ups or downloads required.</p>
+        <p class="mt-8 text-sm text-slate-400 font-medium relative z-10">No sign-ups required. 100% Peer-to-Peer.</p>
     </div>
 
     <!-- CALL SCREEN -->
-    <div id="call-screen" class="h-full w-full bg-gray-950 relative hidden flex-row overflow-hidden">
+    <div id="call-screen" class="h-full w-full bg-[#0a0a0a] relative hidden flex-row overflow-hidden font-sans">
         
         <!-- Main Video Area -->
-        <div class="relative flex-grow h-full overflow-hidden bg-[#0a0a0a] flex flex-col items-center transition-all duration-300" id="video-area">
+        <div class="relative flex-grow h-full overflow-hidden flex flex-col items-center transition-all duration-500" id="video-area">
             
-            <!-- Header / Info Bar -->
-            <div class="absolute top-0 left-0 w-full p-6 flex justify-between items-center z-30 bg-gradient-to-b from-black/80 to-transparent pointer-events-none">
-                <div class="glass-panel-dark px-4 py-2 rounded-full flex items-center gap-2 shadow-lg pointer-events-auto">
-                    <div class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
-                    <span class="text-white font-medium text-sm tracking-wide">Secure Call</span>
+            <!-- Floating Top Bar -->
+            <div class="absolute top-6 left-6 right-6 flex justify-between items-start z-30 pointer-events-none transition-all duration-300" id="top-bar">
+                <div class="glass-panel-dark px-5 py-2.5 rounded-2xl flex items-center gap-3 shadow-xl pointer-events-auto">
+                    <div class="relative flex h-2.5 w-2.5">
+                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                    </div>
+                    <span class="text-white font-semibold text-xs tracking-wider uppercase">Secure Call</span>
                 </div>
                 
                 <!-- Room ID Display -->
-                <div id="room-info" class="hidden items-center glass-panel-dark rounded-full pr-2 pl-5 py-1.5 shadow-lg group transition-all pointer-events-auto">
-                    <span class="text-gray-300 text-sm mr-2 font-medium">Link: <span id="display-room-id" class="text-white font-mono tracking-wider ml-1 select-all">...</span></span>
-                    <button onclick="copyRoomLink()" class="w-8 h-8 flex items-center justify-center bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors" title="Copy Meeting Link">
-                        <i class="fas fa-copy text-sm"></i>
+                <div id="room-info" class="hidden items-center glass-panel-dark rounded-2xl pr-2 pl-6 py-2 shadow-xl group transition-all pointer-events-auto hover:bg-slate-800/80 cursor-pointer" onclick="copyRoomLink()">
+                    <div class="flex flex-col items-start mr-4">
+                        <span class="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-0.5">Meeting Link</span>
+                        <span id="display-room-id" class="text-white font-mono text-sm tracking-wider select-all">...</span>
+                    </div>
+                    <button class="w-10 h-10 flex items-center justify-center bg-white/10 group-hover:bg-indigo-500 rounded-xl text-white transition-all duration-300" title="Copy Meeting Link">
+                        <i class="fas fa-copy"></i>
                     </button>
                 </div>
             </div>
 
-            <!-- Waiting Message -->
-            <div id="waiting-message" class="absolute inset-0 flex flex-col items-center justify-center z-20 hidden bg-gray-950/50 backdrop-blur-sm pointer-events-none">
-                <div class="glass-panel-dark p-10 rounded-3xl text-center shadow-2xl max-w-sm border border-white/10 relative overflow-hidden pointer-events-auto">
-                    <div class="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-indigo-500 rounded-full filter blur-[50px] opacity-20"></div>
+            <!-- Waiting Message (Empty State) -->
+            <div id="waiting-message" class="absolute inset-0 flex flex-col items-center justify-center z-20 hidden backdrop-blur-sm pointer-events-none">
+                <div class="glass-panel-dark p-10 rounded-[2.5rem] text-center shadow-2xl max-w-md border border-white/5 relative overflow-hidden pointer-events-auto transform transition-all hover:scale-[1.02]">
+                    <div class="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-indigo-500 rounded-full filter blur-[70px] opacity-20"></div>
 
-                    <div class="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6 border border-white/10">
-                        <i class="fas fa-user-clock text-3xl text-indigo-400 animate-pulse"></i>
+                    <div class="w-24 h-24 bg-gradient-to-br from-slate-800 to-slate-900 rounded-full flex items-center justify-center mx-auto mb-8 border border-white/10 shadow-inner relative">
+                        <div class="absolute inset-0 rounded-full border border-indigo-500/30 animate-ping" style="animation-duration: 3s;"></div>
+                        <i class="fas fa-user-plus text-4xl text-indigo-400"></i>
                     </div>
-                    <h2 class="text-2xl font-bold text-white mb-3">Waiting for others</h2>
-                    <p class="text-gray-400 mb-8 text-sm leading-relaxed">Share the meeting link below with the people you want to meet. Up to 20 users can join!</p>
+                    <h2 class="text-3xl font-bold text-white mb-3 tracking-tight">You're the only one here</h2>
+                    <p class="text-slate-400 mb-8 text-sm leading-relaxed px-4">Share the meeting link below with the people you want to meet. Up to 20 users can join this secure room.</p>
                     
-                    <div class="bg-black/40 rounded-xl p-4 border border-white/5 mb-4 group cursor-pointer hover:bg-black/60 transition-colors" onclick="copyRoomLink()">
-                        <div class="text-xs text-indigo-400 font-bold uppercase tracking-widest mb-1">Meeting Link</div>
+                    <div class="bg-black/50 rounded-2xl p-5 border border-white/5 group cursor-pointer hover:bg-indigo-500/10 hover:border-indigo-500/30 transition-all duration-300" onclick="copyRoomLink()">
+                        <div class="text-[10px] text-indigo-400 font-bold uppercase tracking-widest mb-2 flex items-center gap-2">
+                            <i class="fas fa-link"></i> Click to copy link
+                        </div>
                         <div class="flex items-center justify-between overflow-hidden">
-                            <span id="waiting-room-id" class="text-white font-mono text-sm truncate mr-2 font-bold"></span>
-                            <i class="fas fa-copy text-gray-500 group-hover:text-white transition-colors"></i>
+                            <span id="waiting-room-id" class="text-white font-mono text-sm truncate mr-3 font-semibold tracking-wide"></span>
+                            <i class="fas fa-copy text-slate-500 group-hover:text-indigo-400 transition-colors text-lg"></i>
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- Remote Videos Grid -->
-            <div id="video-grid" class="w-full h-full p-4 pt-20 pb-28 gap-4 grid place-items-center transition-all duration-500">
-                <!-- User not connected placeholder -->
-                <div id="remote-placeholder" class="col-span-full w-full h-full flex flex-col items-center justify-center pointer-events-none">
-                    <div class="w-32 h-32 rounded-full bg-gray-800 border-2 border-gray-700 flex items-center justify-center shadow-2xl mb-4">
-                        <i class="fas fa-users text-5xl text-gray-600"></i>
-                    </div>
-                </div>
+            <div id="video-grid" class="w-full h-full p-6 pt-28 pb-32 gap-6 grid place-items-center transition-all duration-500 ease-in-out">
+                <!-- User not connected placeholder is removed to keep it cleaner, waiting message handles it -->
             </div>
 
             <!-- Local Video (Picture in Picture) -->
-            <div id="local-video-container" class="absolute bottom-28 right-6 sm:bottom-8 sm:right-8 w-36 sm:w-56 aspect-video bg-gray-900 rounded-2xl overflow-hidden shadow-2xl border border-white/20 z-40 cursor-move group transition-all duration-300 hover:scale-105 hover:shadow-indigo-500/20 ring-4 ring-black/50">
+            <div id="local-video-container" class="absolute bottom-32 right-8 w-40 sm:w-64 aspect-video bg-slate-900 rounded-3xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/10 z-40 cursor-move group transition-all duration-500 hover:scale-[1.02] hover:shadow-indigo-500/20">
                 <video id="local-video" class="w-full h-full object-cover" autoplay muted playsinline></video>
-                <div class="absolute bottom-2 left-2 flex gap-1">
-                    <div id="local-mic-indicator" class="glass-panel-dark px-2 py-1 rounded-md hidden shadow-lg border border-red-500/30">
+                <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div class="absolute bottom-3 left-3 flex gap-2">
+                    <div id="local-mic-indicator" class="glass-panel-dark px-2.5 py-1.5 rounded-xl hidden shadow-lg border border-red-500/30 backdrop-blur-md">
                         <i class="fas fa-microphone-slash text-red-400 text-xs"></i>
                     </div>
                 </div>
-                <div class="absolute top-2 right-2 glass-panel-dark px-2 py-0.5 rounded text-[10px] font-bold text-white uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-opacity">You</div>
+                <div class="absolute top-3 right-3 glass-panel-dark px-3 py-1 rounded-xl text-[10px] font-bold text-white uppercase tracking-wider backdrop-blur-md">You</div>
             </div>
 
-            <!-- Controls Bar -->
-            <div class="absolute bottom-0 left-0 w-full p-6 flex justify-center items-center z-50 bg-gradient-to-t from-black via-black/80 to-transparent pointer-events-none">
-                <div class="flex items-center space-x-2 sm:space-x-4 glass-panel-dark px-6 py-3 rounded-3xl shadow-[0_0_40px_rgba(0,0,0,0.5)] pointer-events-auto">
+            <!-- Floating Controls Pill -->
+            <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-50 pointer-events-none">
+                <div class="flex items-center space-x-3 sm:space-x-4 glass-panel-dark px-4 py-3 sm:px-6 sm:py-4 rounded-full shadow-[0_20px_40px_rgba(0,0,0,0.4)] pointer-events-auto border border-white/10 backdrop-blur-xl">
                     
                     <!-- Mic Toggle -->
-                    <button id="btn-mic" onclick="toggleMic()" class="w-12 h-12 rounded-2xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all duration-300 shadow-lg group tooltip-container relative">
-                        <i class="fas fa-microphone text-lg group-hover:scale-110 transition-transform"></i>
+                    <button id="btn-mic" onclick="toggleMic()" class="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all duration-300 shadow-lg group relative overflow-hidden">
+                        <span class="absolute inset-0 bg-white/5 transform scale-0 group-hover:scale-100 rounded-full transition-transform duration-300 origin-center"></span>
+                        <i class="fas fa-microphone text-lg sm:text-xl group-hover:-translate-y-0.5 transition-transform relative z-10"></i>
                     </button>
                     
                     <!-- Camera Toggle -->
-                    <button id="btn-video" onclick="toggleVideo()" class="w-12 h-12 rounded-2xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all duration-300 shadow-lg group">
-                        <i class="fas fa-video text-lg group-hover:scale-110 transition-transform"></i>
+                    <button id="btn-video" onclick="toggleVideo()" class="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all duration-300 shadow-lg group relative overflow-hidden">
+                        <span class="absolute inset-0 bg-white/5 transform scale-0 group-hover:scale-100 rounded-full transition-transform duration-300 origin-center"></span>
+                        <i class="fas fa-video text-lg sm:text-xl group-hover:-translate-y-0.5 transition-transform relative z-10"></i>
                     </button>
 
                     <!-- Screen Share Toggle -->
-                    <button id="btn-screen" onclick="toggleScreenShare()" class="w-12 h-12 rounded-2xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all duration-300 shadow-lg group">
-                        <i class="fas fa-desktop text-lg group-hover:scale-110 transition-transform"></i>
+                    <button id="btn-screen" onclick="toggleScreenShare()" class="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all duration-300 shadow-lg group relative overflow-hidden hidden sm:flex">
+                        <span class="absolute inset-0 bg-white/5 transform scale-0 group-hover:scale-100 rounded-full transition-transform duration-300 origin-center"></span>
+                        <i class="fas fa-desktop text-lg sm:text-xl group-hover:-translate-y-0.5 transition-transform relative z-10"></i>
                     </button>
                     
-                    <div class="w-px h-8 bg-white/10 mx-1"></div>
+                    <div class="w-px h-8 bg-white/10 mx-1 sm:mx-2"></div>
 
                     <!-- Participants Toggle -->
-                    <button id="btn-participants" onclick="toggleSidebar('participants')" class="w-12 h-12 rounded-2xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all duration-300 shadow-lg group relative">
-                        <i class="fas fa-users text-lg group-hover:scale-110 transition-transform"></i>
-                        <span id="participants-badge" class="absolute -top-1 -right-1 bg-indigo-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center hidden">1</span>
+                    <button id="btn-participants" onclick="toggleSidebar('participants')" class="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all duration-300 shadow-lg group relative overflow-hidden">
+                        <span class="absolute inset-0 bg-white/5 transform scale-0 group-hover:scale-100 rounded-full transition-transform duration-300 origin-center"></span>
+                        <i class="fas fa-users text-lg sm:text-xl group-hover:-translate-y-0.5 transition-transform relative z-10"></i>
+                        <span id="participants-badge" class="absolute top-0 right-0 sm:top-1 sm:right-1 bg-indigo-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center shadow-md border-2 border-slate-900 hidden z-20 transition-all duration-300">1</span>
                     </button>
                     
                     <!-- Chat Toggle -->
-                    <button id="btn-chat" onclick="toggleSidebar('chat')" class="w-12 h-12 rounded-2xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all duration-300 shadow-lg group relative">
-                        <i class="fas fa-comment-dots text-lg group-hover:scale-110 transition-transform"></i>
-                        <span id="chat-badge" class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center hidden">!</span>
+                    <button id="btn-chat" onclick="toggleSidebar('chat')" class="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all duration-300 shadow-lg group relative overflow-hidden">
+                        <span class="absolute inset-0 bg-white/5 transform scale-0 group-hover:scale-100 rounded-full transition-transform duration-300 origin-center"></span>
+                        <i class="fas fa-comment-dots text-lg sm:text-xl group-hover:-translate-y-0.5 transition-transform relative z-10"></i>
+                        <span id="chat-badge" class="absolute top-0 right-0 sm:top-1 sm:right-1 bg-rose-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center shadow-md border-2 border-slate-900 hidden z-20 animate-bounce">!</span>
                     </button>
                     
-                    <div class="w-px h-8 bg-white/10 mx-1"></div>
+                    <div class="w-px h-8 bg-white/10 mx-1 sm:mx-2"></div>
                     
                     <!-- End Call -->
-                    <button onclick="endCall()" class="w-16 h-12 rounded-2xl bg-red-500 hover:bg-red-600 text-white flex items-center justify-center transition-all duration-300 shadow-lg shadow-red-500/30 group">
-                        <i class="fas fa-phone-slash text-lg group-hover:scale-110 transition-transform"></i>
+                    <button onclick="endCall()" class="w-14 h-12 sm:w-20 sm:h-14 rounded-[1.5rem] bg-rose-500 hover:bg-rose-600 text-white flex items-center justify-center transition-all duration-300 shadow-[0_0_20px_rgba(244,63,94,0.4)] hover:shadow-[0_0_30px_rgba(244,63,94,0.6)] group">
+                        <i class="fas fa-phone-slash text-lg sm:text-xl group-hover:scale-110 transition-transform"></i>
                     </button>
                 </div>
             </div>
         </div>
 
         <!-- Sidebar (Chat & Participants) -->
-        <div id="sidebar" class="w-80 h-full glass-panel-dark border-l border-white/10 flex flex-col transition-all duration-300 transform translate-x-full absolute right-0 z-50 sm:relative sm:translate-x-0 sm:w-0 overflow-hidden">
+        <div id="sidebar" class="w-[340px] h-full glass-panel-dark border-l border-white/5 flex flex-col transition-all duration-500 transform translate-x-full absolute right-0 z-50 sm:relative sm:translate-x-0 sm:w-0 overflow-hidden shadow-[-10px_0_30px_rgba(0,0,0,0.3)]">
             
             <!-- Sidebar Header -->
-            <div class="p-4 border-b border-white/10 flex justify-between items-center bg-white/5">
+            <div class="p-5 border-b border-white/5 flex justify-between items-center bg-white/5 backdrop-blur-md">
                 <h3 id="sidebar-title" class="text-white font-bold text-lg tracking-wide">Chat</h3>
-                <button onclick="closeSidebar()" class="text-gray-400 hover:text-white transition-colors p-2">
-                    <i class="fas fa-times"></i>
+                <button onclick="closeSidebar()" class="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-all">
+                    <i class="fas fa-times text-sm"></i>
                 </button>
             </div>
 
             <!-- Chat Content -->
             <div id="chat-content" class="flex-grow flex flex-col hidden h-full">
-                <div id="chat-messages" class="flex-grow overflow-y-auto p-4 space-y-4 hide-scroll flex flex-col">
-                    <div class="text-center text-xs text-gray-500 my-2">Welcome to the secure chat. Messages are peer-to-peer and not stored.</div>
+                <div id="chat-messages" class="flex-grow overflow-y-auto p-5 space-y-4 hide-scroll flex flex-col">
+                    <div class="text-center bg-white/5 rounded-2xl py-3 px-4 mx-auto border border-white/5">
+                        <i class="fas fa-lock text-indigo-400 mb-2 text-lg"></i>
+                        <p class="text-[11px] text-slate-400 font-medium leading-relaxed">Welcome to secure chat.<br>Messages are end-to-end encrypted and disappear when the call ends.</p>
+                    </div>
                 </div>
-                <div class="p-4 border-t border-white/10 bg-white/5">
-                    <form id="chat-form" onsubmit="sendChatMessage(event)" class="flex gap-2">
-                        <input type="text" id="chat-input" placeholder="Type a message..." class="flex-grow bg-gray-900/50 border border-gray-700 text-white text-sm rounded-xl focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 block p-3 outline-none transition-all placeholder-gray-500" disabled>
-                        <button type="submit" id="chat-submit" class="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl px-4 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>
-                            <i class="fas fa-paper-plane"></i>
+                <div class="p-4 border-t border-white/5 bg-black/20 backdrop-blur-xl">
+                    <form id="chat-form" onsubmit="sendChatMessage(event)" class="flex gap-2 bg-white/5 p-1 rounded-2xl border border-white/10 focus-within:border-indigo-500/50 transition-colors">
+                        <input type="text" id="chat-input" placeholder="Type a message..." class="flex-grow bg-transparent text-white text-sm rounded-xl px-4 py-3 outline-none placeholder-slate-500" disabled>
+                        <button type="submit" id="chat-submit" class="bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl px-5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shadow-lg shadow-indigo-500/20" disabled>
+                            <i class="fas fa-paper-plane text-sm"></i>
                         </button>
                     </form>
                 </div>
@@ -282,7 +311,7 @@
 
             <!-- Participants Content -->
             <div id="participants-content" class="flex-grow overflow-y-auto p-4 hide-scroll hidden">
-                <div class="space-y-3" id="participants-list">
+                <div class="space-y-2" id="participants-list">
                     <!-- Participants will be dynamically generated -->
                 </div>
             </div>
@@ -330,7 +359,6 @@
             btnVideo: document.getElementById('btn-video'),
             btnScreen: document.getElementById('btn-screen'),
             localMicIndicator: document.getElementById('local-mic-indicator'),
-            remotePlaceholder: document.getElementById('remote-placeholder'),
             sidebar: document.getElementById('sidebar'),
             videoArea: document.getElementById('video-area'),
             chatContent: document.getElementById('chat-content'),
@@ -363,12 +391,12 @@
             const ctx = canvas.getContext('2d');
             
             setInterval(() => {
-                ctx.fillStyle = '#111827'; 
+                ctx.fillStyle = '#0f172a'; // slate-900
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
-                ctx.fillStyle = '#6b7280'; 
-                ctx.font = '500 24px "Plus Jakarta Sans"';
+                ctx.fillStyle = '#64748b'; // slate-500
+                ctx.font = '600 24px "Plus Jakarta Sans"';
                 ctx.textAlign = 'center';
-                ctx.fillText('No Camera Detected', canvas.width/2, canvas.height/2);
+                ctx.fillText('Camera Off', canvas.width/2, canvas.height/2);
                 
                 const time = Date.now() / 1000;
                 const x = canvas.width/2 + Math.sin(time) * 50;
@@ -397,7 +425,7 @@
         }
 
         async function initializeMedia() {
-            checkUrlParams(); // Check if joined via link
+            checkUrlParams(); 
 
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
                 console.warn("Media devices API not available.");
@@ -440,7 +468,7 @@
                 updateVideoUI();
                 updateMicUI();
             } catch (e) {
-                ui.previewOverlay.innerHTML = '<div class="w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center mb-4"><i class="fas fa-ban text-2xl text-red-400"></i></div><span class="text-sm font-medium">Media API unavailable</span>';
+                ui.previewOverlay.innerHTML = '<div class="w-14 h-14 bg-rose-500/20 rounded-full flex items-center justify-center mb-4"><i class="fas fa-video-slash text-2xl text-rose-400"></i></div><span class="text-xs font-bold tracking-wider uppercase text-rose-200">Camera Unavailable</span>';
             }
         }
 
@@ -470,9 +498,9 @@
             peer = initPeer();
 
             peer.on('open', (id) => {
-                activeRoomId = id; // Host's Peer ID is the Room ID
+                activeRoomId = id; 
                 const link = getRoomLink(id);
-                ui.displayRoomId.innerText = id;
+                ui.displayRoomId.innerText = link;
                 ui.waitingRoomId.innerText = link;
                 ui.roomInfo.classList.remove('hidden');
                 ui.roomInfo.classList.add('flex');
@@ -512,15 +540,13 @@
 
             peer.on('open', () => {
                 setupPeerListeners();
-                initiateConnection(inputId); // Connect to Host
+                initiateConnection(inputId); 
             });
 
             handlePeerErrors();
         }
 
-        // Global Listeners for incoming Mesh Connections
         function setupPeerListeners() {
-            // Incoming Call
             peer.on('call', (call) => {
                 if (!peers[call.peer]) peers[call.peer] = { name: 'Joining...' };
                 peers[call.peer].call = call;
@@ -531,7 +557,6 @@
                 ui.waitingMessage.classList.add('hidden');
             });
 
-            // Incoming Data Connection
             peer.on('connection', (conn) => {
                 if (!peers[conn.peer]) peers[conn.peer] = { name: 'Joining...' };
                 peers[conn.peer].data = conn;
@@ -540,24 +565,20 @@
             });
         }
 
-        // Connect to a specific peer
         function initiateConnection(targetPeerId) {
-            if (peers[targetPeerId]) return; // Already connected
+            if (peers[targetPeerId]) return; 
             
             peers[targetPeerId] = { name: 'Connecting...' };
             
-            // 1. Media
             const call = peer.call(targetPeerId, localStream);
             peers[targetPeerId].call = call;
             setupMediaCallEvents(call);
 
-            // 2. Data
             const conn = peer.connect(targetPeerId);
             peers[targetPeerId].data = conn;
             setupDataConnEvents(conn);
         }
 
-        // Handle Media Events
         function setupMediaCallEvents(call) {
             call.on('stream', (stream) => {
                 if (peers[call.peer]) {
@@ -569,13 +590,11 @@
             call.on('error', () => removePeer(call.peer));
         }
 
-        // Handle Data Events
         function setupDataConnEvents(conn) {
             ui.chatInput.disabled = false;
             ui.chatSubmit.disabled = false;
 
             conn.on('open', () => {
-                // Introduce ourselves
                 conn.send({ type: 'handshake', name: localUserName });
             });
 
@@ -585,10 +604,9 @@
                         peers[conn.peer].name = data.name;
                         updateParticipantsList();
                         updateVideoLabel(conn.peer, data.name);
-                        appendMessage(`System: ${data.name} has joined.`, 'system');
+                        appendMessage(`${data.name} has joined the room.`, 'system');
                     }
 
-                    // If I am the Host, I must send the new guest the list of ALL OTHER currently connected guests so they can mesh connect.
                     if (peer.id === activeRoomId) {
                         const existingPeers = Object.keys(peers).filter(p => p !== conn.peer);
                         if (existingPeers.length > 0) {
@@ -597,7 +615,6 @@
                     }
                 } 
                 else if (data.type === 'peer-list') {
-                    // Host sent us the list of other active peers. Let's connect to them.
                     data.list.forEach(peerId => {
                         if (peerId !== peer.id && !peers[peerId]) {
                             initiateConnection(peerId);
@@ -614,7 +631,6 @@
                     }
                 }
                 else if (data.type === 'leaving') {
-                    // Instantly handle when someone explicitly clicks the leave button
                     removePeer(conn.peer);
                 }
             });
@@ -627,9 +643,8 @@
             peer.on('error', (err) => {
                 console.error("Peer error:", err);
                 if (err.type === 'peer-unavailable') {
-                    // Only show critical error if we were trying to join the host and failed
                     if (Object.keys(peers).length === 0) {
-                        showToast("Meeting not found. The host may have left.");
+                        showToast("Meeting not found. The host may have ended it.");
                         endCall();
                     }
                 } else {
@@ -640,28 +655,38 @@
 
         // --- Dynamic Video Grid Rendering ---
         function addVideoElement(peerId, stream) {
-            if (document.getElementById(`video-container-${peerId}`)) return; // Already exists
+            if (document.getElementById(`video-container-${peerId}`)) return; 
             
             const container = document.createElement('div');
             container.id = `video-container-${peerId}`;
-            container.className = 'relative w-full h-full min-h-[150px] max-h-full rounded-2xl overflow-hidden shadow-lg bg-gray-900 border border-white/10 transition-all duration-300 flex items-center justify-center';
+            container.className = 'relative w-full h-full min-h-[180px] rounded-[2rem] overflow-hidden shadow-2xl bg-slate-900 border border-white/5 transition-all duration-500 flex items-center justify-center group transform scale-[0.98] opacity-0';
             
+            // Animate in
+            setTimeout(() => {
+                container.classList.remove('scale-[0.98]', 'opacity-0');
+                container.classList.add('scale-100', 'opacity-100');
+            }, 50);
+
             const video = document.createElement('video');
             video.id = `video-${peerId}`;
             video.srcObject = stream;
             video.autoplay = true;
             video.playsInline = true;
-            video.muted = false; // explicitly ensuring audio works for remote participants
-            video.volume = 1; // max volume
-            video.className = 'w-full h-full object-cover transition-opacity duration-500 opacity-0 mirror-video';
-            video.onloadedmetadata = () => video.classList.add('opacity-100');
+            video.muted = false; 
+            video.volume = 1; 
+            video.className = 'w-full h-full object-cover transition-transform duration-700 mirror-video group-hover:scale-105';
             
+            // Gradient Overlay for readability of name
+            const overlay = document.createElement('div');
+            overlay.className = 'absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-60 transition-opacity group-hover:opacity-80';
+
             const nameLabel = document.createElement('div');
             nameLabel.id = `label-${peerId}`;
-            nameLabel.className = 'absolute bottom-3 left-3 glass-panel-dark px-3 py-1 rounded-lg text-xs font-bold text-white tracking-wide shadow-lg z-10';
+            nameLabel.className = 'absolute bottom-4 left-4 glass-panel-dark px-4 py-1.5 rounded-xl text-xs font-semibold text-white tracking-wide shadow-lg z-10 border border-white/10 backdrop-blur-md';
             nameLabel.innerText = peers[peerId]?.name || 'Connecting...';
             
             container.appendChild(video);
+            container.appendChild(overlay);
             container.appendChild(nameLabel);
             ui.videoGrid.appendChild(container);
             
@@ -678,48 +703,47 @@
                 const name = peers[peerId].name || 'Someone';
                 if (peers[peerId].call) peers[peerId].call.close();
                 if (peers[peerId].data) peers[peerId].data.close();
-                appendMessage(`System: ${name} has left the meeting.`, 'system');
+                appendMessage(`${name} left the room.`, 'system');
                 delete peers[peerId];
             }
             
             const el = document.getElementById(`video-container-${peerId}`);
-            if (el) el.remove();
+            if (el) {
+                el.classList.replace('scale-100', 'scale-95');
+                el.classList.replace('opacity-100', 'opacity-0');
+                setTimeout(() => el.remove(), 300);
+            }
             
             updateParticipantsList();
-            updateGridClasses();
+            setTimeout(updateGridClasses, 300); // Wait for animation
         }
 
         function updateGridClasses() {
             const count = Object.keys(peers).length;
             
-            // Remove existing grid column classes
-            ui.videoGrid.className = 'w-full h-full p-4 pt-20 pb-28 gap-4 grid place-items-center transition-all duration-500';
+            ui.videoGrid.className = 'w-full h-full p-6 pt-24 pb-32 gap-6 grid place-items-center transition-all duration-500 ease-in-out';
             
             if (count === 0) {
-                ui.remotePlaceholder.classList.remove('hidden');
-                // Ensure waiting message is visible if we are host and alone
                 if (peer && peer.id === activeRoomId) {
                     ui.waitingMessage.classList.remove('hidden');
                 }
             } else {
-                ui.remotePlaceholder.classList.add('hidden');
                 ui.waitingMessage.classList.add('hidden');
                 
-                // Dynamic grid logic based on participant count
                 if (count === 1) {
-                    ui.videoGrid.classList.add('grid-cols-1');
+                    ui.videoGrid.classList.add('grid-cols-1', 'max-w-5xl', 'mx-auto');
                 } else if (count === 2) {
-                    ui.videoGrid.classList.add('grid-cols-1', 'sm:grid-cols-2');
+                    ui.videoGrid.classList.add('grid-cols-1', 'md:grid-cols-2', 'max-w-6xl', 'mx-auto');
                 } else if (count <= 4) {
-                    ui.videoGrid.classList.add('grid-cols-2');
+                    ui.videoGrid.classList.add('grid-cols-2', 'max-w-7xl', 'mx-auto');
                 } else if (count <= 6) {
-                    ui.videoGrid.classList.add('grid-cols-2', 'md:grid-cols-3');
+                    ui.videoGrid.classList.add('grid-cols-2', 'lg:grid-cols-3', 'max-w-7xl', 'mx-auto');
                 } else if (count <= 9) {
-                    ui.videoGrid.classList.add('grid-cols-3');
+                    ui.videoGrid.classList.add('grid-cols-3', 'max-w-full');
                 } else if (count <= 16) {
-                    ui.videoGrid.classList.add('grid-cols-4');
+                    ui.videoGrid.classList.add('grid-cols-4', 'max-w-full');
                 } else {
-                    ui.videoGrid.classList.add('grid-cols-4', 'lg:grid-cols-5');
+                    ui.videoGrid.classList.add('grid-cols-4', 'xl:grid-cols-5', 'max-w-full');
                 }
             }
         }
@@ -727,7 +751,7 @@
         // --- Screen Sharing ---
         async function toggleScreenShare() {
             if (Object.keys(peers).length === 0) {
-                showToast("Cannot share screen. No one else is in the meeting.");
+                showToast("Share your screen when someone joins!");
                 return;
             }
 
@@ -736,7 +760,6 @@
                     screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
                     const videoTrack = screenStream.getVideoTracks()[0];
                     
-                    // Replace track in ALL peer connections
                     Object.values(peers).forEach(p => {
                         if (p.call && p.call.peerConnection) {
                             const sender = p.call.peerConnection.getSenders().find(s => s.track.kind === 'video');
@@ -747,11 +770,11 @@
                     isScreenSharing = true;
                     ui.btnScreen.classList.replace('bg-white/10', 'bg-indigo-500');
                     ui.btnScreen.classList.replace('hover:bg-white/20', 'hover:bg-indigo-600');
+                    ui.btnScreen.querySelector('i').classList.replace('fa-desktop', 'fa-stop-circle');
                     
                     videoTrack.onended = () => stopScreenShare();
                 } catch (e) {
                     console.error("Screen share failed", e);
-                    showToast("Screen sharing was cancelled or failed.");
                 }
             } else {
                 stopScreenShare();
@@ -763,7 +786,6 @@
             
             const videoTrack = localStream.getVideoTracks()[0];
             
-            // Restore camera track for all peers
             Object.values(peers).forEach(p => {
                 if (p.call && p.call.peerConnection) {
                     const sender = p.call.peerConnection.getSenders().find(s => s.track.kind === 'video');
@@ -778,6 +800,7 @@
             isScreenSharing = false;
             ui.btnScreen.classList.replace('bg-indigo-500', 'bg-white/10');
             ui.btnScreen.classList.replace('hover:bg-indigo-600', 'hover:bg-white/20');
+            ui.btnScreen.querySelector('i').classList.replace('fa-stop-circle', 'fa-desktop');
         }
 
         // --- Chat System ---
@@ -788,7 +811,6 @@
 
             let sentToAnyone = false;
 
-            // Broadcast to all active data connections
             Object.values(peers).forEach(p => {
                 if (p.data && p.data.open) {
                     p.data.send({ type: 'chat', text: text });
@@ -800,7 +822,7 @@
                 appendMessage(text, 'me', localUserName);
                 ui.chatInput.value = '';
             } else {
-                showToast("No one else is in the meeting to receive this message.");
+                showToast("Wait for someone to join before chatting.");
             }
         }
 
@@ -808,22 +830,22 @@
             const msgDiv = document.createElement('div');
             
             if (sender === 'system') {
-                msgDiv.className = 'text-center text-xs text-gray-400 my-2';
-                msgDiv.innerText = text;
+                msgDiv.className = 'text-center my-3';
+                msgDiv.innerHTML = `<span class="bg-white/10 text-slate-300 text-[10px] font-semibold uppercase tracking-wider px-3 py-1 rounded-full border border-white/5">${text}</span>`;
             } else {
                 const isMe = sender === 'me';
-                msgDiv.className = `flex flex-col ${isMe ? 'items-end' : 'items-start'} mb-4`;
+                msgDiv.className = `flex flex-col ${isMe ? 'items-end' : 'items-start'} mb-5 group`;
                 
                 const nameLabel = document.createElement('div');
-                nameLabel.className = 'text-[10px] text-gray-400 mb-1 px-1';
+                nameLabel.className = 'text-[10px] font-semibold text-slate-400 mb-1.5 px-1 uppercase tracking-wider';
                 nameLabel.innerText = isMe ? 'You' : senderName;
 
                 const bubble = document.createElement('div');
-                bubble.className = `max-w-[85%] px-4 py-2 text-sm text-white shadow-md ${isMe ? 'chat-bubble-me rounded-t-2xl rounded-bl-2xl' : 'chat-bubble-them rounded-t-2xl rounded-br-2xl'}`;
+                bubble.className = `max-w-[90%] px-4 py-3 text-sm text-white shadow-lg ${isMe ? 'chat-bubble-me rounded-2xl rounded-tr-sm' : 'chat-bubble-them rounded-2xl rounded-tl-sm backdrop-blur-md'}`;
                 bubble.innerText = text;
                 
                 const time = document.createElement('div');
-                time.className = 'text-[10px] text-gray-500 mt-1 px-1';
+                time.className = 'text-[9px] font-medium text-slate-500 mt-1.5 px-1 opacity-0 group-hover:opacity-100 transition-opacity';
                 time.innerText = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
                 msgDiv.appendChild(nameLabel);
@@ -844,8 +866,8 @@
             }
 
             ui.sidebar.classList.remove('translate-x-full', 'sm:w-0');
-            ui.sidebar.classList.add('sm:w-80');
-            ui.videoArea.classList.add('sm:pr-80');
+            ui.sidebar.classList.add('sm:w-[340px]');
+            ui.videoArea.classList.add('sm:pr-[340px]');
             
             activeSidebar = panel;
 
@@ -860,7 +882,7 @@
                 ui.chatMessages.scrollTop = ui.chatMessages.scrollHeight;
                 setTimeout(() => ui.chatInput.focus(), 300);
             } else if (panel === 'participants') {
-                ui.sidebarTitle.innerText = `Participants (${Object.keys(peers).length + 1})`;
+                ui.sidebarTitle.innerText = `In Call (${Object.keys(peers).length + 1})`;
                 ui.participantsContent.classList.remove('hidden');
                 ui.chatContent.classList.add('hidden');
             }
@@ -868,13 +890,13 @@
 
         function closeSidebar() {
             ui.sidebar.classList.add('translate-x-full', 'sm:w-0');
-            ui.sidebar.classList.remove('sm:w-80');
-            ui.videoArea.classList.remove('sm:pr-80');
+            ui.sidebar.classList.remove('sm:w-[340px]');
+            ui.videoArea.classList.remove('sm:pr-[340px]');
             
             setTimeout(() => {
                 ui.chatContent.classList.add('hidden');
                 ui.participantsContent.classList.add('hidden');
-            }, 300);
+            }, 500);
             activeSidebar = null;
         }
 
@@ -883,14 +905,19 @@
             const totalCount = Object.keys(peers).length + 1;
             
             let html = `
-                <div class="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold">${localUserName.charAt(0).toUpperCase()}</div>
-                        <span class="text-white font-medium text-sm">${localUserName} (You) ${isHost ? '👑' : ''}</span>
+                <div class="flex items-center justify-between p-3.5 rounded-2xl bg-white/10 border border-white/10 shadow-sm backdrop-blur-md transition-all hover:bg-white/15">
+                    <div class="flex items-center gap-4">
+                        <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 text-white flex items-center justify-center font-bold text-lg shadow-inner">
+                            ${localUserName.charAt(0).toUpperCase()}
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="text-white font-semibold text-sm">${localUserName} (You)</span>
+                            <span class="text-indigo-300 text-[10px] uppercase tracking-wider font-bold">${isHost ? 'Meeting Host' : 'Participant'}</span>
+                        </div>
                     </div>
-                    <div class="flex gap-2 text-gray-400 text-xs">
-                        <i class="fas ${isMicMuted ? 'fa-microphone-slash text-red-400' : 'fa-microphone'}"></i>
-                        <i class="fas ${isCamOff ? 'fa-video-slash text-red-400' : 'fa-video'}"></i>
+                    <div class="flex gap-2 text-slate-400 text-xs bg-black/20 p-2 rounded-xl border border-white/5">
+                        <i class="fas ${isMicMuted ? 'fa-microphone-slash text-rose-400' : 'fa-microphone text-emerald-400'} w-4 text-center"></i>
+                        <i class="fas ${isCamOff ? 'fa-video-slash text-rose-400' : 'fa-video text-emerald-400'} w-4 text-center"></i>
                     </div>
                 </div>
             `;
@@ -901,13 +928,18 @@
                 const isPeerHost = (pid === activeRoomId);
                 
                 html += `
-                    <div class="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5 mt-2">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-full bg-gray-700 text-gray-300 flex items-center justify-center font-bold">${pName.charAt(0).toUpperCase()}</div>
-                            <span class="text-white font-medium text-sm w-32 truncate">${pName} ${isPeerHost ? '👑' : ''}</span>
+                    <div class="flex items-center justify-between p-3.5 rounded-2xl bg-white/5 border border-white/5 mt-3 hover:bg-white/10 transition-colors">
+                        <div class="flex items-center gap-4">
+                            <div class="w-11 h-11 rounded-xl bg-slate-800 text-slate-300 flex items-center justify-center font-bold text-lg border border-white/10">
+                                ${pName.charAt(0).toUpperCase()}
+                            </div>
+                            <div class="flex flex-col">
+                                <span class="text-white font-semibold text-sm w-32 truncate">${pName}</span>
+                                <span class="text-slate-400 text-[10px] uppercase tracking-wider font-bold">${isPeerHost ? 'Meeting Host' : 'Participant'}</span>
+                            </div>
                         </div>
-                        <div class="flex gap-2 text-green-400 text-xs">
-                            <i class="fas fa-link" title="Connected"></i>
+                        <div class="flex gap-2 text-emerald-400 text-xs bg-emerald-500/10 p-2 rounded-xl border border-emerald-500/20">
+                            <i class="fas fa-signal" title="Connected"></i>
                         </div>
                     </div>
                 `;
@@ -923,23 +955,24 @@
             }
 
             if (activeSidebar === 'participants') {
-                ui.sidebarTitle.innerText = `Participants (${totalCount})`;
+                ui.sidebarTitle.innerText = `In Call (${totalCount})`;
             }
         }
 
         function updateMicUI() {
+            const icon = ui.btnMic.querySelector('i');
             if (isMicMuted) {
-                ui.btnMic.innerHTML = '<i class="fas fa-microphone-slash text-lg group-hover:scale-110 transition-transform"></i>';
-                ui.btnMic.classList.replace('bg-white/10', 'bg-red-500/20');
-                ui.btnMic.classList.replace('hover:bg-white/20', 'hover:bg-red-500/30');
-                ui.btnMic.classList.add('text-red-400');
+                icon.className = 'fas fa-microphone-slash text-lg sm:text-xl group-hover:-translate-y-0.5 transition-transform relative z-10';
+                ui.btnMic.classList.replace('bg-white/10', 'bg-rose-500/20');
+                ui.btnMic.classList.replace('hover:bg-white/20', 'hover:bg-rose-500/30');
+                ui.btnMic.classList.add('text-rose-400');
                 ui.btnMic.classList.remove('text-white');
                 ui.localMicIndicator.classList.remove('hidden');
             } else {
-                ui.btnMic.innerHTML = '<i class="fas fa-microphone text-lg group-hover:scale-110 transition-transform"></i>';
-                ui.btnMic.classList.replace('bg-red-500/20', 'bg-white/10');
-                ui.btnMic.classList.replace('hover:bg-red-500/30', 'hover:bg-white/20');
-                ui.btnMic.classList.remove('text-red-400');
+                icon.className = 'fas fa-microphone text-lg sm:text-xl group-hover:-translate-y-0.5 transition-transform relative z-10';
+                ui.btnMic.classList.replace('bg-rose-500/20', 'bg-white/10');
+                ui.btnMic.classList.replace('hover:bg-rose-500/30', 'hover:bg-white/20');
+                ui.btnMic.classList.remove('text-rose-400');
                 ui.btnMic.classList.add('text-white');
                 ui.localMicIndicator.classList.add('hidden');
             }
@@ -947,17 +980,18 @@
         }
 
         function updateVideoUI() {
+            const icon = ui.btnVideo.querySelector('i');
             if (isCamOff) {
-                ui.btnVideo.innerHTML = '<i class="fas fa-video-slash text-lg group-hover:scale-110 transition-transform"></i>';
-                ui.btnVideo.classList.replace('bg-white/10', 'bg-red-500/20');
-                ui.btnVideo.classList.replace('hover:bg-white/20', 'hover:bg-red-500/30');
-                ui.btnVideo.classList.add('text-red-400');
+                icon.className = 'fas fa-video-slash text-lg sm:text-xl group-hover:-translate-y-0.5 transition-transform relative z-10';
+                ui.btnVideo.classList.replace('bg-white/10', 'bg-rose-500/20');
+                ui.btnVideo.classList.replace('hover:bg-white/20', 'hover:bg-rose-500/30');
+                ui.btnVideo.classList.add('text-rose-400');
                 ui.btnVideo.classList.remove('text-white');
             } else {
-                ui.btnVideo.innerHTML = '<i class="fas fa-video text-lg group-hover:scale-110 transition-transform"></i>';
-                ui.btnVideo.classList.replace('bg-red-500/20', 'bg-white/10');
-                ui.btnVideo.classList.replace('hover:bg-red-500/30', 'hover:bg-white/20');
-                ui.btnVideo.classList.remove('text-red-400');
+                icon.className = 'fas fa-video text-lg sm:text-xl group-hover:-translate-y-0.5 transition-transform relative z-10';
+                ui.btnVideo.classList.replace('bg-rose-500/20', 'bg-white/10');
+                ui.btnVideo.classList.replace('hover:bg-rose-500/30', 'hover:bg-white/20');
+                ui.btnVideo.classList.remove('text-rose-400');
                 ui.btnVideo.classList.add('text-white');
             }
             updateParticipantsList();
@@ -973,7 +1007,7 @@
                 audioTracks[0].enabled = !isMicMuted;
                 updateMicUI();
             } else {
-                showToast("No microphone available on this device.");
+                showToast("No microphone available.");
             }
         }
 
@@ -987,21 +1021,19 @@
                 videoTracks[0].enabled = !isCamOff;
                 updateVideoUI();
             } else {
-                showToast("No camera available on this device.");
+                showToast("No camera available.");
             }
         }
 
         function endCall() {
             if (isScreenSharing) stopScreenShare();
 
-            // Notify everyone we are leaving so they remove us immediately
             Object.values(peers).forEach(p => {
                 if (p.data && p.data.open) {
                     p.data.send({ type: 'leaving' });
                 }
             });
 
-            // Destroy all peer connections locally
             Object.keys(peers).forEach(pid => {
                 if (peers[pid].call) peers[pid].call.close();
                 if (peers[pid].data) peers[pid].data.close();
@@ -1015,7 +1047,12 @@
             
             closeSidebar();
             
-            ui.chatMessages.innerHTML = '<div class="text-center text-xs text-gray-500 my-2">Welcome to the secure chat. Messages are peer-to-peer and not stored.</div>';
+            ui.chatMessages.innerHTML = `
+                <div class="text-center bg-white/5 rounded-2xl py-3 px-4 mx-auto border border-white/5">
+                    <i class="fas fa-lock text-indigo-400 mb-2 text-lg"></i>
+                    <p class="text-[11px] text-slate-400 font-medium leading-relaxed">Welcome to secure chat.<br>Messages are end-to-end encrypted and disappear when the call ends.</p>
+                </div>
+            `;
             ui.chatInput.disabled = true;
             ui.chatSubmit.disabled = true;
             
@@ -1023,7 +1060,7 @@
             
             document.getElementById('join-id-input').value = '';
             switchScreen('setup');
-            showToast("You have left the meeting.");
+            showToast("You left the meeting.");
         }
 
         // --- Utility Functions ---
@@ -1031,12 +1068,14 @@
         function switchScreen(screenName) {
             if (screenName === 'call') {
                 screens.setup.classList.add('hidden');
+                screens.setup.classList.remove('flex');
                 screens.call.classList.remove('hidden');
                 screens.call.classList.add('flex');
             } else {
                 screens.call.classList.add('hidden');
                 screens.call.classList.remove('flex');
                 screens.setup.classList.remove('hidden');
+                screens.setup.classList.add('flex');
                 ui.waitingMessage.classList.add('hidden');
             }
         }
