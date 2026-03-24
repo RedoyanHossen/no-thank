@@ -569,20 +569,29 @@
             const ctx = canvas.getContext('2d');
             
             setInterval(() => {
+                ctx.save();
                 ctx.fillStyle = '#0f172a'; // slate-900
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // CRITICAL FIX: Move origin to center, flip canvas horizontally so text isn't mirrored when video is mirrored by CSS
+                ctx.translate(canvas.width / 2, canvas.height / 2);
+                ctx.scale(-1, 1);
+                
                 ctx.fillStyle = '#64748b'; // slate-500
                 ctx.font = '600 24px "Plus Jakarta Sans"';
                 ctx.textAlign = 'center';
-                ctx.fillText(t('camera_off'), canvas.width/2, canvas.height/2);
+                ctx.textBaseline = 'middle';
+                ctx.fillText(t('camera_off'), 0, 0);
                 
                 const time = Date.now() / 1000;
-                const x = canvas.width/2 + Math.sin(time) * 50;
-                const y = canvas.height/2 + 40;
+                const x = Math.sin(time) * 50;
+                const y = 40;
                 ctx.fillStyle = '#6366f1'; 
                 ctx.beginPath();
                 ctx.arc(x, y, 6, 0, Math.PI*2);
                 ctx.fill();
+                
+                ctx.restore();
             }, 1000/15); 
             
             const videoStream = canvas.captureStream(15);
@@ -612,8 +621,7 @@
                 setupDummyStreamFallback();
             } else {
                 
-                // LOW BANDWIDTH OPTIMIZATION (Net Slow thakleo kaj korbe)
-                // Resolution 320x240 (240p) ebong 15 fps set kora hoyeche jate 20 jon eksathe call korleo lag na hoy.
+                // LOW BANDWIDTH OPTIMIZATION
                 const optimalConstraints = {
                     audio: {
                         echoCancellation: true,
@@ -672,12 +680,11 @@
         // --- Core WebRTC / PeerJS Logic (MESH) ---
 
         function initPeer() {
-            // Updated STUN Servers for better reliability
             return new Peer({
                 config: {'iceServers': [
                     { urls: 'stun:stun.l.google.com:19302' },
                     { urls: 'stun:stun1.l.google.com:19302' },
-                    { urls: 'stun:stun2.l.google.com:19302' },
+                    { urls: 'stun:stun.cloudflare.com:3478' }, // Added Cloudflare STUN for better reliability
                     { urls: 'stun:global.stun.twilio.com:3478' }
                 ]}
             });
@@ -746,7 +753,9 @@
 
         function setupPeerListeners() {
             peer.on('call', (call) => {
-                if (!peers[call.peer]) peers[call.peer] = { name: t('joining') };
+                // CRITICAL FIX: Extract name from metadata if available immediately
+                const callerName = call.metadata?.name || t('joining');
+                if (!peers[call.peer]) peers[call.peer] = { name: callerName };
                 peers[call.peer].call = call;
                 
                 call.answer(localStream);
@@ -756,7 +765,8 @@
             });
 
             peer.on('connection', (conn) => {
-                if (!peers[conn.peer]) peers[conn.peer] = { name: t('joining') };
+                const connectorName = conn.metadata?.name || t('joining');
+                if (!peers[conn.peer]) peers[conn.peer] = { name: connectorName };
                 peers[conn.peer].data = conn;
                 
                 setupDataConnEvents(conn);
@@ -764,17 +774,23 @@
         }
 
         function initiateConnection(targetPeerId) {
-            if (peers[targetPeerId]) return; 
+            // Check if already connecting or connected
+            if (peers[targetPeerId] && (peers[targetPeerId].call || peers[targetPeerId].data)) return; 
             
             peers[targetPeerId] = { name: t('connecting') };
             
-            const call = peer.call(targetPeerId, localStream);
-            peers[targetPeerId].call = call;
-            setupMediaCallEvents(call);
+            // Pass name in metadata so the other side knows instantly
+            const call = peer.call(targetPeerId, localStream, { metadata: { name: localUserName } });
+            if (call) {
+                peers[targetPeerId].call = call;
+                setupMediaCallEvents(call);
+            }
 
-            const conn = peer.connect(targetPeerId);
-            peers[targetPeerId].data = conn;
-            setupDataConnEvents(conn);
+            const conn = peer.connect(targetPeerId, { metadata: { name: localUserName } });
+            if (conn) {
+                peers[targetPeerId].data = conn;
+                setupDataConnEvents(conn);
+            }
         }
 
         function setupMediaCallEvents(call) {
@@ -786,6 +802,23 @@
             });
             call.on('close', () => removePeer(call.peer));
             call.on('error', () => removePeer(call.peer));
+
+            // CRITICAL FIX: Monitor ICE connection state to remove dropped peers immediately
+            setTimeout(() => {
+                if (call.peerConnection) {
+                    call.peerConnection.addEventListener('iceconnectionstatechange', () => {
+                        const state = call.peerConnection.iceConnectionState;
+                        if (state === 'failed' || state === 'disconnected' || state === 'closed') {
+                            const pName = peers[call.peer]?.name || '';
+                            // Only show error if they didn't intentionally leave
+                            if (peers[call.peer]) {
+                                showToast(t('conn_error') + (pName ? ` (${pName})` : ''));
+                                removePeer(call.peer);
+                            }
+                        }
+                    });
+                }
+            }, 1500);
         }
 
         function setupDataConnEvents(conn) {
@@ -793,7 +826,9 @@
             ui.chatSubmit.disabled = false;
 
             const sendHandshake = () => {
-                conn.send({ type: 'handshake', name: localUserName });
+                if (conn.open) {
+                    conn.send({ type: 'handshake', name: localUserName });
+                }
             };
 
             // THIS IS THE CRITICAL FIX: Data channel open logic reliably sends handshake
@@ -809,10 +844,12 @@
                         peers[conn.peer].name = data.name;
                         updateParticipantsList();
                         updateVideoLabel(conn.peer, data.name);
-                        appendMessage(`${data.name} ${t('joined_room')}`, 'system');
+                        
+                        const avatar = document.getElementById(`avatar-${conn.peer}`);
+                        if (avatar) avatar.innerText = data.name.charAt(0).toUpperCase();
                     }
 
-                    if (peer.id === activeRoomId) {
+                    if (peer && peer.id === activeRoomId) {
                         const existingPeers = Object.keys(peers).filter(p => p !== conn.peer);
                         if (existingPeers.length > 0) {
                             conn.send({ type: 'peer-list', list: existingPeers });
@@ -821,7 +858,7 @@
                 } 
                 else if (data.type === 'peer-list') {
                     data.list.forEach(peerId => {
-                        if (peerId !== peer.id && !peers[peerId]) {
+                        if (peer && peerId !== peer.id && !peers[peerId]) {
                             initiateConnection(peerId);
                         }
                     });
@@ -846,12 +883,25 @@
 
         function handlePeerErrors() {
             peer.on('error', (err) => {
-                console.error("Peer error:", err);
+                // We handle peer-unavailable gracefully
                 if (err.type === 'peer-unavailable') {
-                    if (Object.keys(peers).length === 0) {
+                    // Safely extract failed peer ID
+                    let failedPeerId = null;
+                    if (err.message && err.message.includes('Could not connect to peer')) {
+                         failedPeerId = err.message.split('Could not connect to peer ')[1];
+                    }
+                    
+                    if (failedPeerId) {
+                        removePeer(failedPeerId);
+                    }
+
+                    // Only show critical error if we are the guest trying to connect to host
+                    if (Object.keys(peers).length === 0 && activeRoomId && peer && peer.id !== activeRoomId) {
                         showToast(t('meeting_not_found'));
                         endCall();
                     }
+                } else if (err.type === 'network' || err.type === 'disconnected' || err.type === 'server-error') {
+                    // Do nothing for console, just ignore
                 } else {
                     showToast(t('conn_error'));
                 }
@@ -862,7 +912,6 @@
         function addVideoElement(peerId, stream) {
             const existingContainer = document.getElementById(`video-container-${peerId}`);
             
-            // Safeguard: Updates stream if it already exists to prevent duplicate containers
             if (existingContainer) {
                 const existingVideo = document.getElementById(`video-${peerId}`);
                 if (existingVideo && existingVideo.srcObject !== stream) {
@@ -876,14 +925,20 @@
             container.id = `video-container-${peerId}`;
             container.className = 'relative w-full h-full min-h-[140px] sm:min-h-[180px] rounded-2xl sm:rounded-[2rem] overflow-hidden shadow-2xl bg-slate-900 border border-white/5 transition-all duration-500 flex items-center justify-center group transform scale-[0.98] opacity-0';
 
+            // Check if stream actually has video tracks
+            const hasVideo = stream.getVideoTracks().length > 0;
+
             const video = document.createElement('video');
             video.id = `video-${peerId}`;
             video.srcObject = stream;
+            // CRITICAL FIX: explicitly set HTML attributes for iOS/mobile compatibility
+            video.setAttribute('autoplay', '');
+            video.setAttribute('playsinline', '');
             video.autoplay = true;
             video.playsInline = true;
             video.muted = false; 
             video.volume = 1; 
-            video.className = 'w-full h-full object-cover transition-transform duration-700 mirror-video group-hover:scale-105';
+            video.className = `w-full h-full object-cover transition-transform duration-700 mirror-video group-hover:scale-105 ${hasVideo ? '' : 'hidden'}`;
             
             // Safely start video to avoid mobile browser autoplay policies blocking media
             video.onloadedmetadata = () => {
@@ -898,9 +953,16 @@
             const nameLabel = document.createElement('div');
             nameLabel.id = `label-${peerId}`;
             nameLabel.className = 'absolute bottom-3 left-3 sm:bottom-4 sm:left-4 glass-panel-dark px-3 py-1 sm:px-4 sm:py-1.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-semibold text-white tracking-wide shadow-lg z-10 border border-white/10 backdrop-blur-md max-w-[80%] truncate pointer-events-none';
-            nameLabel.innerText = peers[peerId]?.name || t('connecting');
+            const peerName = peers[peerId]?.name || t('connecting');
+            nameLabel.innerText = peerName;
+
+            // Avatar fallback for audio-only streams (Black Screen Fix)
+            const avatarOverlay = document.createElement('div');
+            avatarOverlay.className = `absolute inset-0 flex flex-col items-center justify-center bg-slate-800 ${hasVideo ? 'hidden' : 'flex'}`;
+            avatarOverlay.innerHTML = `<div id="avatar-${peerId}" class="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-slate-700 flex items-center justify-center text-2xl sm:text-3xl font-bold text-slate-300 shadow-inner border border-white/5">${peerName.charAt(0).toUpperCase()}</div>`;
             
             container.appendChild(video);
+            container.appendChild(avatarOverlay);
             container.appendChild(overlay);
             container.appendChild(nameLabel);
             ui.videoGrid.appendChild(container);
@@ -918,7 +980,7 @@
                 const name = peers[peerId].name || t('guest');
                 if (peers[peerId].call) peers[peerId].call.close();
                 if (peers[peerId].data) peers[peerId].data.close();
-                appendMessage(`${name} ${t('left_room')}`, 'system');
+                // appendMessage(`${name} ${t('left_room')}`, 'system');
                 delete peers[peerId];
             }
             
@@ -945,6 +1007,7 @@
             } else {
                 ui.waitingMessage.classList.add('hidden');
                 
+                // Adjusted for better mobile grid logic
                 if (count === 1) {
                     ui.videoGrid.classList.add('grid-cols-1', 'max-w-5xl', 'mx-auto');
                 } else if (count === 2) {
