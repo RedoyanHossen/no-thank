@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>QuickMeet - WebRTC Group Video Call</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>VISCORA - Premium Video Calls</title>
     
     <!-- Tailwind CSS for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -24,14 +24,34 @@
                     fontFamily: {
                         sans: ['"Plus Jakarta Sans"', 'sans-serif'],
                     },
+                    colors: {
+                        gray: {
+                            750: '#2d3748',
+                            850: '#1a202c',
+                            950: '#0d1117',
+                        }
+                    },
                     animation: {
-                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-                        'float': 'float 6s ease-in-out infinite',
+                        'pulse-slow': 'pulse 6s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'float': 'float 8s ease-in-out infinite',
+                        'float-delayed': 'float 8s ease-in-out 4s infinite',
+                        'blob': 'blob 10s infinite alternate',
+                        'slide-up': 'slideUp 0.5s ease-out forwards',
                     },
                     keyframes: {
                         float: {
                             '0%, 100%': { transform: 'translateY(0)' },
-                            '50%': { transform: 'translateY(-10px)' },
+                            '50%': { transform: 'translateY(-15px)' },
+                        },
+                        blob: {
+                            '0%': { transform: 'translate(0px, 0px) scale(1)' },
+                            '33%': { transform: 'translate(30px, -50px) scale(1.1)' },
+                            '66%': { transform: 'translate(-20px, 20px) scale(0.9)' },
+                            '100%': { transform: 'translate(0px, 0px) scale(1)' },
+                        },
+                        slideUp: {
+                            '0%': { transform: 'translateY(20px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' },
                         }
                     }
                 }
@@ -39,454 +59,587 @@
         }
     </script>
     <style>
-        /* Video element er custom styling */
-        .mirror-video {
-            transform: scaleX(-1);
-        }
-        .unmirrored {
-            transform: scaleX(1) !important;
-        }
+        .mirror-video { transform: scaleX(-1); }
+        .unmirrored { transform: scaleX(1) !important; }
         #local-video {
             object-fit: cover;
             transform: scaleX(-1);
-            transition: all 0.3s ease;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        /* Custom scrollbar design */
-        .hide-scroll::-webkit-scrollbar {
-            width: 0px;
-            height: 0px;
-            display: none;
-        }
-        .hide-scroll {
-            -ms-overflow-style: none; 
-            scrollbar-width: none; 
-        }
-        .custom-scroll::-webkit-scrollbar {
-            width: 5px;
-        }
-        .custom-scroll::-webkit-scrollbar-track {
-            background: transparent;
-        }
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+        .custom-scroll::-webkit-scrollbar { width: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
         .custom-scroll::-webkit-scrollbar-thumb {
             background: rgba(255, 255, 255, 0.15);
-            border-radius: 10px;
+            border-radius: 20px;
         }
-        .custom-scroll::-webkit-scrollbar-thumb:hover {
-            background: rgba(255, 255, 255, 0.25);
-        }
-        /* Glassmorphism effects */
+        .custom-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.3); }
+        
         .glass-panel {
-            background: rgba(255, 255, 255, 0.7);
+            background: rgba(255, 255, 255, 0.75);
             backdrop-filter: blur(24px);
             -webkit-backdrop-filter: blur(24px);
-            border: 1px solid rgba(255, 255, 255, 0.6);
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
         }
         .glass-panel-dark {
-            background: rgba(15, 23, 42, 0.65);
-            backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            background: rgba(17, 24, 39, 0.7);
+            backdrop-filter: blur(20px) saturate(150%);
+            -webkit-backdrop-filter: blur(20px) saturate(150%);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
         }
-        /* Chat bubble styling */
-        .chat-bubble-me {
-            background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%);
-            border-bottom-right-radius: 4px;
+        
+        input:focus { outline: none; }
+        .input-smart:focus-within {
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+            border-color: rgba(99, 102, 241, 0.5);
+            background: rgba(255,255,255,1);
         }
-        .chat-bubble-them {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            border-bottom-left-radius: 4px;
+
+        .has-tooltip:hover .tooltip {
+            opacity: 1;
+            transform: translateY(0);
+            visibility: visible;
         }
-        input:focus {
-            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
-        }
+        
+        /* Custom Toggle Switch */
+        .toggle-checkbox:checked { right: 0; border-color: #4f46e5; }
+        .toggle-checkbox:checked + .toggle-label { background-color: #4f46e5; }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 font-sans h-screen overflow-hidden selection:bg-indigo-200 overscroll-none">
+<body class="bg-slate-50 text-slate-800 font-sans h-screen overflow-hidden selection:bg-indigo-200 overscroll-none antialiased">
 
-    <!-- Toast Notification (Message Alert) -->
-    <div id="toast" class="fixed top-8 left-1/2 transform -translate-x-1/2 glass-panel-dark text-white px-5 py-3 sm:px-6 sm:py-3.5 rounded-full shadow-2xl z-[100] transition-all duration-400 opacity-0 pointer-events-none translate-y-[-20px] flex items-center gap-2 sm:gap-3 border border-white/10 w-[90%] max-w-sm sm:max-w-max">
-        <i class="fas fa-check-circle text-indigo-400 text-base sm:text-lg shrink-0"></i>
-        <span id="toast-message" class="font-medium text-sm tracking-wide truncate">Message</span>
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed top-safe pt-4 sm:top-6 w-[90%] sm:w-auto left-1/2 transform -translate-x-1/2 bg-gray-900/95 backdrop-blur-xl text-white px-4 py-3 sm:px-5 sm:py-3.5 rounded-full shadow-2xl z-[100] transition-all duration-400 opacity-0 pointer-events-none translate-y-[-20px] flex items-center gap-3 border border-white/10 max-w-max">
+        <div class="bg-indigo-500 rounded-full w-6 h-6 flex items-center justify-center shrink-0">
+            <i class="fas fa-bell text-xs text-white"></i>
+        </div>
+        <span id="toast-message" class="font-medium text-xs sm:text-sm tracking-wide text-slate-100 pr-2 truncate">Message</span>
     </div>
 
-    <!-- SETUP SCREEN (Landing Page / Home) -->
-    <div id="setup-screen" class="h-full flex flex-col items-center justify-center p-4 sm:p-6 transition-all duration-500 relative overflow-x-hidden overflow-y-auto bg-gradient-to-br from-indigo-50 via-white to-purple-50">
+    <!-- SETUP SCREEN -->
+    <div id="setup-screen" class="h-full w-full flex flex-col lg:flex-row items-center justify-center p-4 pt-24 pb-10 sm:p-12 xl:p-24 gap-6 lg:gap-20 transition-all duration-700 relative overflow-y-auto overflow-x-hidden bg-slate-50">
         
-        <!-- Language Toggle Button -->
-        <div class="absolute top-4 right-4 sm:top-6 sm:right-6 z-50">
-            <button onclick="toggleLanguage()" class="glass-panel text-slate-700 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl text-[10px] sm:text-xs font-bold tracking-widest flex items-center gap-2 hover:bg-white transition-colors shadow-sm cursor-pointer active:scale-95">
-                <i class="fas fa-language text-indigo-500 text-sm sm:text-base"></i> <span id="lang-toggle-text">বাংলা / EN</span>
+        <!-- Top Nav -->
+        <div class="absolute top-0 left-0 w-full p-4 pt-safe-top sm:p-6 flex justify-between items-center z-50 bg-slate-50/80 backdrop-blur-md border-b border-slate-200/50 sm:border-none sm:bg-transparent sm:backdrop-blur-none">
+            <div class="flex items-center gap-2 sm:gap-3 cursor-default">
+                
+                <!-- VISCORA LOGO -->
+                <img src="LOGO.png" onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=V&background=4f46e5&color=fff&rounded=true&bold=true';" alt="VISCORA Logo" class="h-8 sm:h-12 w-auto object-contain drop-shadow-sm">
+                
+            </div>
+            <button onclick="toggleLanguage()" class="bg-white/80 backdrop-blur-md text-slate-600 hover:text-indigo-600 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-[10px] sm:text-xs font-bold tracking-widest flex items-center gap-2 transition-all shadow-sm border border-slate-200 hover:border-indigo-200 hover:shadow-md active:scale-95">
+                <i class="fas fa-globe text-sm sm:text-base"></i> <span id="lang-toggle-text">বাংলা</span>
             </button>
         </div>
 
-        <!-- Decorative Background Elements -->
-        <div class="absolute top-[0%] left-[-5%] w-[20rem] h-[20rem] sm:w-[40rem] sm:h-[40rem] bg-indigo-200 rounded-full mix-blend-multiply filter blur-[70px] sm:blur-[100px] opacity-40 animate-pulse-slow"></div>
-        <div class="absolute bottom-[-10%] right-[-5%] w-[20rem] h-[20rem] sm:w-[40rem] sm:h-[40rem] bg-fuchsia-200 rounded-full mix-blend-multiply filter blur-[70px] sm:blur-[100px] opacity-40 animate-pulse-slow" style="animation-delay: 2s;"></div>
-        <div class="absolute top-[20%] right-[10%] sm:right-[20%] w-32 h-32 sm:w-64 sm:h-64 bg-blue-200 rounded-full mix-blend-multiply filter blur-[50px] sm:blur-[80px] opacity-50 animate-float"></div>
+        <div class="absolute top-0 left-1/4 w-[30rem] sm:w-[40rem] h-[30rem] sm:h-[40rem] bg-indigo-300/30 rounded-full mix-blend-multiply filter blur-[80px] sm:blur-[120px] opacity-70 animate-blob pointer-events-none"></div>
+        <div class="absolute bottom-0 right-1/4 w-[25rem] sm:w-[35rem] h-[25rem] sm:h-[35rem] bg-purple-300/30 rounded-full mix-blend-multiply filter blur-[80px] sm:blur-[100px] opacity-70 animate-blob pointer-events-none" style="animation-delay: 2s;"></div>
+        <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjIiIGZpbGw9IiNlNGRlZWYiIGZpbGwtb3BhY2l0eT0iMC40Ii8+PC9zdmc+')] opacity-40 z-0 pointer-events-none"></div>
 
-        <div class="text-center mt-12 sm:mt-0 mb-6 sm:mb-10 relative z-10 animate-float" style="animation-duration: 8s;">
-            <div class="inline-flex items-center justify-center w-16 h-16 sm:w-24 sm:h-24 rounded-[1.5rem] sm:rounded-[2rem] bg-gradient-to-br from-indigo-500 to-blue-600 text-white mb-4 sm:mb-6 shadow-xl sm:shadow-2xl shadow-indigo-500/40 transform rotate-3 hover:rotate-0 transition-transform duration-500 border border-white/20">
-                <i class="fas fa-video text-3xl sm:text-5xl"></i>
+        <!-- Left Content -->
+        <div class="w-full lg:w-[55%] max-w-2xl flex flex-col justify-center items-center lg:items-start text-center lg:text-left z-10 animate-slide-up mt-4 sm:mt-0">
+            <div class="space-y-4 sm:space-y-5 px-2 sm:px-0 w-full">
+                <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-100/80 text-indigo-700 text-[10px] sm:text-xs font-bold tracking-wide border border-indigo-200 backdrop-blur-sm mx-auto lg:mx-0">
+                    <span class="relative flex h-2 w-2">
+                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                      <span class="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+                    </span>
+                    100% Secure P2P Connection
+                </div>
+                <h1 class="text-[2rem] leading-[1.2] sm:text-5xl lg:text-[4rem] lg:leading-[1.1] font-extrabold text-slate-900 tracking-tight" data-i18n="main_heading">
+                    Premium video meetings.<br><span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">Now free for everyone.</span>
+                </h1>
+                <p class="text-sm sm:text-lg lg:text-xl text-slate-500 font-medium max-w-[90%] sm:max-w-lg mx-auto lg:mx-0 leading-relaxed" data-i18n="app_desc">
+                    Connect, collaborate, and celebrate from anywhere with VISCORA's lightning-fast, secure network.
+                </p>
             </div>
-            <h1 class="text-4xl sm:text-6xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-slate-900 via-indigo-900 to-slate-800 mb-2 sm:mb-4 pb-1">QuickMeet</h1>
-            <p class="text-slate-500 max-w-[280px] sm:max-w-md mx-auto text-sm sm:text-lg font-medium leading-relaxed" data-i18n="app_desc">Secure, high-quality group video calls right in your browser. Connect with up to 20 people instantly.</p>
-        </div>
-
-        <div class="glass-panel p-5 sm:p-10 rounded-[2rem] sm:rounded-[2.5rem] w-full max-w-[440px] relative z-10 mb-8 sm:mb-0 shadow-[0_8px_30px_rgb(0,0,0,0.06)]">
             
-            <!-- Camera Preview Box -->
-            <div class="relative w-full aspect-video bg-slate-900 rounded-2xl sm:rounded-3xl overflow-hidden mb-6 sm:mb-8 shadow-inner border-[3px] sm:border-[4px] border-white/60 group">
-                <video id="preview-video" class="w-full h-full object-cover transform scale-x-[-1] transition-transform duration-700 group-hover:scale-105" autoplay muted playsinline></video>
-                <div id="preview-overlay" class="absolute inset-0 flex flex-col items-center justify-center text-white bg-slate-900/80 backdrop-blur-md transition-opacity duration-300">
-                    <div class="w-10 h-10 sm:w-12 sm:h-12 border-4 border-indigo-400 border-t-transparent rounded-full animate-spin mb-3 sm:mb-4 shadow-[0_0_15px_rgba(99,102,241,0.5)]"></div>
-                    <span class="text-xs sm:text-sm font-semibold tracking-wider uppercase text-indigo-200" data-i18n="accessing_camera">Accessing Camera</span>
-                </div>
-            </div>
-
-            <div class="space-y-4 sm:space-y-5">
-                <!-- User Name Input Field -->
-                <div class="relative w-full group">
-                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors group-focus-within:text-indigo-500">
-                        <i class="fas fa-user text-slate-400 group-focus-within:text-indigo-500 transition-colors"></i>
+            <!-- Interaction Block -->
+            <div class="w-full max-w-xl mt-6 sm:mt-8 space-y-3 sm:space-y-4 px-2 sm:px-0 mx-auto lg:mx-0">
+                <div class="input-smart flex items-center bg-white/80 backdrop-blur-md rounded-xl sm:rounded-2xl border border-slate-200 p-1 sm:p-1.5 w-full shadow-sm transition-all group hover:bg-white">
+                    <div class="pl-3 sm:pl-4 pr-2 text-slate-400 group-focus-within:text-indigo-500 transition-colors">
+                        <i class="fas fa-user-circle text-lg sm:text-xl"></i>
                     </div>
-                    <!-- text-base on mobile to prevent iOS Safari auto-zoom -->
-                    <input type="text" id="user-name-input" data-i18n-placeholder="name_placeholder" placeholder="What's your name?" class="w-full bg-white/60 border border-white text-slate-800 text-base sm:text-sm font-medium rounded-xl sm:rounded-2xl block pl-10 sm:pl-12 p-3.5 sm:p-4 outline-none transition-all placeholder-slate-400 focus:bg-white hover:bg-white/80">
+                    <input type="text" id="user-name-input" data-i18n-placeholder="name_placeholder" placeholder="Enter your display name" class="bg-transparent border-none outline-none px-2 py-3 w-full text-slate-700 text-sm sm:text-base font-medium placeholder-slate-400">
                 </div>
 
-                <!-- Create Meeting Button -->
-                <button onclick="createRoom()" class="w-full bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white font-bold py-3.5 sm:py-4 px-4 rounded-xl sm:rounded-2xl transition-all duration-300 transform hover:-translate-y-1 active:scale-95 hover:shadow-[0_10px_25px_-5px_rgba(79,70,229,0.4)] flex items-center justify-center gap-2 sm:gap-3 text-sm sm:text-base">
-                    <i class="fas fa-video text-base sm:text-lg"></i> <span data-i18n="new_meeting_btn">Start New Meeting</span>
-                </button>
-                
-                <div class="relative flex items-center py-1 sm:py-2">
-                    <div class="flex-grow border-t border-slate-200"></div>
-                    <span class="flex-shrink-0 mx-3 sm:mx-4 text-slate-400 text-[10px] sm:text-[11px] font-bold uppercase tracking-widest" data-i18n="or_join">Or join existing</span>
-                    <div class="flex-grow border-t border-slate-200"></div>
-                </div>
-
-                <!-- Join Meeting Row -->
-                <div class="flex gap-2 sm:gap-3 flex-col sm:flex-row">
-                    <div class="relative flex-grow group">
-                        <div class="absolute inset-y-0 left-0 pl-3 sm:pl-4 flex items-center pointer-events-none">
-                            <i class="fas fa-link text-slate-400 group-focus-within:text-indigo-500 transition-colors text-sm sm:text-base"></i>
-                        </div>
-                        <input type="text" id="join-id-input" data-i18n-placeholder="link_placeholder" placeholder="Paste link or ID" class="w-full bg-white/60 border border-white text-slate-800 text-base sm:text-sm font-medium rounded-xl sm:rounded-2xl block pl-9 sm:pl-12 p-3.5 sm:p-4 outline-none transition-all placeholder-slate-400 focus:bg-white hover:bg-white/80">
-                    </div>
-                    <button onclick="joinRoom()" class="w-full sm:w-auto bg-white hover:bg-slate-50 text-indigo-600 font-bold py-3.5 sm:py-4 px-6 sm:px-8 rounded-xl sm:rounded-2xl transition-all duration-300 border border-white shadow-sm hover:shadow-md transform hover:-translate-y-1 active:scale-95 text-sm sm:text-base flex items-center justify-center">
-                        <span data-i18n="join_btn">Join</span>
+                <div class="flex flex-col sm:flex-row items-center gap-3 w-full">
+                    <button onclick="createRoom()" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl sm:rounded-2xl px-5 sm:px-7 py-3.5 sm:py-4 flex items-center justify-center gap-2.5 sm:gap-3 text-sm sm:text-base font-semibold shadow-xl shadow-indigo-600/20 transition-all active:scale-95 shrink-0 group">
+                        <i class="fas fa-video group-hover:scale-110 transition-transform"></i> <span data-i18n="new_meeting_btn">New meeting</span>
                     </button>
+                    
+                    <div class="input-smart flex items-center bg-white/80 backdrop-blur-md rounded-xl sm:rounded-2xl border border-slate-200 p-1 w-full shadow-sm transition-all group hover:bg-white">
+                        <div class="pl-3 pr-2 text-slate-400 group-focus-within:text-indigo-500 transition-colors hidden sm:block">
+                            <i class="fas fa-link"></i>
+                        </div>
+                        <input type="text" id="join-id-input" data-i18n-placeholder="link_placeholder" placeholder="Enter a code or link" class="bg-transparent border-none outline-none px-3 sm:px-3 py-3 w-full text-slate-700 text-sm sm:text-base font-medium placeholder-slate-400">
+                        <button onclick="joinRoom()" class="bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900 font-semibold px-5 sm:px-6 py-2.5 sm:py-3 rounded-lg sm:rounded-xl transition-colors shrink-0 text-sm sm:text-base" data-i18n="join_btn">Join</button>
+                    </div>
                 </div>
             </div>
         </div>
-        
-        <p class="mt-2 sm:mt-8 mb-4 sm:mb-0 text-xs sm:text-sm text-slate-400 font-medium relative z-10 text-center" data-i18n="no_signup">No sign-ups required. 100% Peer-to-Peer.</p>
+
+        <!-- Right Content -->
+        <div class="w-full lg:w-[40%] max-w-md z-10 animate-float px-2 sm:px-0 mt-6 lg:mt-0">
+            <div class="glass-panel p-2.5 sm:p-4 rounded-2xl sm:rounded-[2rem] shadow-[0_15px_30px_-10px_rgba(0,0,0,0.15)] border-white/80 relative">
+                <div class="relative w-full aspect-[4/3] bg-slate-900 rounded-xl sm:rounded-2xl overflow-hidden shadow-inner group">
+                    <video id="preview-video" class="w-full h-full object-cover transform scale-x-[-1] transition-transform duration-700 group-hover:scale-[1.02]" autoplay muted playsinline></video>
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/10 pointer-events-none"></div>
+                    
+                    <div id="preview-overlay" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/95 backdrop-blur-sm transition-opacity duration-300 z-10">
+                        <div class="w-10 h-10 sm:w-12 sm:h-12 border-[3px] border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin mb-3"></div>
+                        <span class="text-[10px] sm:text-xs font-bold tracking-widest uppercase text-slate-300" data-i18n="accessing_camera">Starting Camera</span>
+                    </div>
+
+                    <div class="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 bg-black/50 backdrop-blur-md px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-white/10 flex items-center gap-1.5 sm:gap-2">
+                        <div class="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+                        <span class="text-white text-[9px] sm:text-[10px] font-bold uppercase tracking-wider">Ready</span>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- CALL SCREEN (Main Meeting Room) -->
-    <div id="call-screen" class="h-full w-full bg-[#0a0a0a] relative hidden overflow-hidden font-sans">
+    <!-- CALL SCREEN -->
+    <div id="call-screen" class="h-full w-full bg-[#0d1117] relative hidden overflow-hidden font-sans">
         
-        <!-- Main Video Area (Grid) -->
-        <div class="absolute inset-0 flex flex-col items-center transition-all duration-500" id="video-area">
+        <!-- Waiting Lobby Overlay (For Guests) -->
+        <div id="waiting-lobby-overlay" class="absolute inset-0 bg-gray-900/95 backdrop-blur-2xl z-[80] hidden flex-col items-center justify-center p-6 text-center">
+            <div class="w-20 h-20 bg-indigo-500/10 rounded-full flex items-center justify-center relative mb-6">
+                <div class="absolute inset-0 rounded-full border-[3px] border-indigo-500 border-t-transparent animate-spin"></div>
+                <i class="fas fa-lock text-2xl text-indigo-400"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-white mb-2" id="waiting-lobby-title" data-i18n="connecting">Connecting...</h2>
+            <p class="text-slate-400 text-sm max-w-sm mb-8" id="waiting-lobby-desc" data-i18n="waiting_for_host">Waiting for host to let you in.</p>
+            <button onclick="endCall()" class="px-6 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl font-medium transition-colors border border-white/10">Cancel</button>
+        </div>
+
+        <div class="absolute inset-0 flex flex-col items-center transition-all duration-500 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-gray-800 via-gray-900 to-black" id="video-area">
             
-            <!-- Floating Top Bar (Room Info) -->
-            <div class="absolute top-3 left-3 right-3 sm:top-6 sm:left-6 sm:right-6 flex justify-between items-start z-30 pointer-events-none transition-all duration-300" id="top-bar">
-                <div class="glass-panel-dark px-3 py-2 sm:px-5 sm:py-2.5 rounded-xl sm:rounded-2xl flex items-center gap-2 sm:gap-3 shadow-xl pointer-events-auto shrink-0">
-                    <div class="relative flex h-2 w-2 sm:h-2.5 sm:w-2.5">
-                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                      <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+            <!-- Top Bar -->
+            <div class="absolute top-safe pt-3 sm:pt-6 w-full px-3 sm:px-6 flex justify-between items-start z-30 pointer-events-none" id="top-bar">
+                
+                <div class="flex items-center gap-2 sm:gap-3">
+                    <div class="glass-panel-dark px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg sm:rounded-xl flex items-center gap-2 sm:gap-3 shadow-lg pointer-events-auto shrink-0 border border-white/10 bg-gray-900/70 hover:bg-gray-800/90 transition-colors cursor-default backdrop-blur-md">
+                        <i class="fas fa-shield-alt text-emerald-400 text-[10px] sm:text-xs"></i>
+                        <span class="text-slate-200 font-bold text-[9px] sm:text-[10px] tracking-widest uppercase" data-i18n="secure_call">Encrypted</span>
                     </div>
-                    <span class="text-white font-semibold text-[10px] sm:text-xs tracking-wider uppercase hidden sm:inline-block" data-i18n="secure_call">Secure</span>
+                    
+                    <div class="glass-panel-dark px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg sm:rounded-xl flex items-center gap-1.5 sm:gap-2 shadow-lg pointer-events-auto shrink-0 border border-white/10 bg-gray-900/70 hover:bg-gray-800/90 transition-colors cursor-default backdrop-blur-md">
+                        <i class="far fa-clock text-indigo-400 text-[10px] sm:text-xs"></i>
+                        <span id="meeting-time" class="text-slate-200 font-bold text-[9px] sm:text-[11px] tracking-wider uppercase">00:00</span>
+                    </div>
                 </div>
                 
-                <!-- Room ID / Link Display Button -->
-                <div id="room-info" class="hidden items-center glass-panel-dark rounded-xl sm:rounded-2xl pr-1.5 pl-3 sm:pr-2 sm:pl-6 py-1.5 sm:py-2 shadow-xl group transition-all pointer-events-auto hover:bg-slate-800/80 cursor-pointer active:scale-95 max-w-[65%] sm:max-w-none" onclick="copyRoomLink()">
-                    <div class="flex flex-col items-start mr-2 sm:mr-4 overflow-hidden w-full">
-                        <span class="text-slate-400 text-[9px] sm:text-[10px] font-bold uppercase tracking-widest mb-0.5 hidden sm:block" data-i18n="meeting_link">Meeting Link</span>
-                        <span id="display-room-id" class="text-white font-mono text-[11px] sm:text-sm tracking-wider select-all truncate w-full text-left">...</span>
+                <div id="room-info" class="hidden items-center glass-panel-dark pl-2.5 pr-1 py-1 sm:pl-3 sm:pr-1.5 sm:py-1.5 rounded-lg sm:rounded-xl shadow-lg group transition-all duration-300 pointer-events-auto hover:bg-gray-800/90 border border-white/10 max-w-[45%] sm:max-w-xs cursor-pointer" onclick="copyRoomLink()">
+                    <div class="flex items-center gap-1.5 sm:gap-2 overflow-hidden w-full">
+                        <i class="fas fa-link text-indigo-400 text-[9px] sm:text-[11px]"></i>
+                        <span id="display-room-id" class="text-slate-200 font-bold text-[9px] sm:text-[11px] tracking-wider truncate w-full text-left">...</span>
                     </div>
-                    <button class="w-8 h-8 sm:w-10 sm:h-10 shrink-0 flex items-center justify-center bg-white/10 group-hover:bg-indigo-500 rounded-lg sm:rounded-xl text-white transition-all duration-300" data-i18n-title="copy_link_tooltip" title="Copy Meeting Link">
-                        <i class="fas fa-copy text-xs sm:text-base"></i>
-                    </button>
+                    <div class="w-5 h-5 sm:w-6 sm:h-6 shrink-0 flex items-center justify-center bg-white/5 group-hover:bg-indigo-500 rounded text-slate-300 group-hover:text-white transition-all duration-300 ml-2">
+                        <i class="fas fa-copy text-[8px] sm:text-[10px]"></i>
+                    </div>
                 </div>
             </div>
 
-            <!-- Waiting Message (Empty State when alone) -->
-            <div id="waiting-message" class="absolute inset-0 flex flex-col items-center justify-center z-20 hidden backdrop-blur-sm pointer-events-none p-4 mt-10 sm:mt-0">
-                <div class="glass-panel-dark p-6 sm:p-10 rounded-[2rem] sm:rounded-[2.5rem] text-center shadow-2xl w-full max-w-[90%] sm:max-w-md border border-white/5 relative overflow-hidden pointer-events-auto transform transition-all hover:scale-[1.02]">
-                    <div class="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-32 h-32 sm:w-48 sm:h-48 bg-indigo-500 rounded-full filter blur-[50px] sm:blur-[70px] opacity-20"></div>
-
-                    <div class="w-16 h-16 sm:w-24 sm:h-24 bg-gradient-to-br from-slate-800 to-slate-900 rounded-full flex items-center justify-center mx-auto mb-6 sm:mb-8 border border-white/10 shadow-inner relative">
-                        <div class="absolute inset-0 rounded-full border border-indigo-500/30 animate-ping" style="animation-duration: 3s;"></div>
-                        <i class="fas fa-user-plus text-2xl sm:text-4xl text-indigo-400"></i>
+            <!-- Empty State -->
+            <div id="waiting-message" class="absolute inset-0 flex flex-col items-center justify-center z-20 hidden pointer-events-none p-4 mt-8 sm:mt-0">
+                <div class="bg-gray-900/70 backdrop-blur-2xl p-6 sm:p-10 rounded-3xl sm:rounded-[2rem] text-center shadow-2xl w-full max-w-[90%] sm:max-w-[440px] border border-white/5 relative overflow-hidden pointer-events-auto group">
+                    <div class="w-16 h-16 sm:w-20 sm:h-20 bg-indigo-500/10 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6 relative">
+                        <div class="absolute inset-0 rounded-full border border-indigo-500/30 animate-ping" style="animation-duration: 2.5s;"></div>
+                        <i class="fas fa-user-plus text-2xl sm:text-3xl text-indigo-400"></i>
                     </div>
-                    <h2 class="text-xl sm:text-3xl font-bold text-white mb-2 sm:mb-3 tracking-tight" data-i18n="only_one_here">You're the only one here</h2>
-                    <p class="text-slate-400 mb-6 sm:mb-8 text-xs sm:text-sm leading-relaxed px-1 sm:px-4" data-i18n="share_link_desc">Share the meeting link below with the people you want to meet. Up to 20 users can join this secure room.</p>
+                    <h2 class="text-lg sm:text-2xl font-bold text-white mb-2" data-i18n="only_one_here">Waiting for others</h2>
+                    <p class="text-slate-400 text-xs sm:text-sm mb-5 sm:mb-8 leading-relaxed px-1 sm:px-2" data-i18n="share_link_desc">Share this link to invite people to the meeting.</p>
                     
-                    <div class="bg-black/50 rounded-xl sm:rounded-2xl p-4 sm:p-5 border border-white/5 group cursor-pointer hover:bg-indigo-500/10 hover:border-indigo-500/30 transition-all duration-300 active:scale-95" onclick="copyRoomLink()">
-                        <div class="text-[9px] sm:text-[10px] text-indigo-400 font-bold uppercase tracking-widest mb-1.5 sm:mb-2 flex items-center gap-1.5 sm:gap-2">
-                            <i class="fas fa-link"></i> <span data-i18n="click_to_copy">Click to copy link</span>
+                    <div class="bg-black/50 rounded-xl p-2 sm:p-2.5 border border-white/5 cursor-pointer hover:border-indigo-500/50 hover:bg-indigo-500/10 transition-all flex items-center justify-between group/copy" onclick="copyRoomLink()">
+                        <div class="flex items-center gap-2 sm:gap-3 overflow-hidden pl-2">
+                            <i class="fas fa-link text-indigo-400 text-[10px] sm:text-sm"></i>
+                            <span id="waiting-room-id" class="text-slate-200 text-[10px] sm:text-sm truncate font-medium"></span>
                         </div>
-                        <div class="flex items-center justify-between overflow-hidden">
-                            <span id="waiting-room-id" class="text-white font-mono text-xs sm:text-sm truncate mr-2 sm:mr-3 font-semibold tracking-wide"></span>
-                            <i class="fas fa-copy text-slate-500 group-hover:text-indigo-400 transition-colors text-base sm:text-lg"></i>
-                        </div>
+                        <div class="bg-white/10 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg text-[9px] sm:text-xs font-bold text-white group-hover/copy:bg-indigo-500 transition-colors shrink-0">Copy</div>
                     </div>
                 </div>
             </div>
 
-            <!-- Remote Videos Grid Container -->
-            <!-- pb-[120px] ensures videos don't hide behind the control pill on mobile -->
-            <div id="video-grid" class="w-full h-full p-3 sm:p-6 pt-20 sm:pt-28 pb-[120px] sm:pb-36 gap-2 sm:gap-6 grid place-items-center transition-all duration-500 ease-in-out custom-scroll overflow-y-auto">
-                <!-- User video elements will be dynamically injected here -->
-            </div>
+            <!-- Remote Videos Grid -->
+            <div id="video-grid" class="w-full h-full p-2 sm:p-6 pt-20 sm:pt-24 pb-[110px] sm:pb-36 gap-2 sm:gap-6 grid place-items-center transition-all duration-500 ease-in-out custom-scroll overflow-y-auto"></div>
 
-            <!-- Local Video (PiP - Picture in Picture) -->
-            <!-- Position adjusted for mobile so it doesn't block the bottom controls -->
-            <div id="local-video-container" class="absolute bottom-[90px] sm:bottom-36 right-3 sm:right-8 w-[100px] h-[140px] sm:w-48 sm:h-auto md:w-64 aspect-[3/4] sm:aspect-video bg-slate-900 rounded-xl sm:rounded-3xl overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.6)] border border-white/10 z-40 cursor-move group transition-all duration-500 hover:scale-[1.02] hover:shadow-indigo-500/20">
+            <!-- Local Video -->
+            <div id="local-video-container" class="absolute bottom-[80px] sm:bottom-32 right-3 sm:right-6 w-[90px] h-[120px] sm:w-[220px] sm:h-[165px] bg-gray-800 rounded-xl sm:rounded-2xl overflow-hidden shadow-[0_8px_30px_rgba(0,0,0,0.5)] border-2 border-white/10 z-40 group transition-all duration-300 hover:scale-105 hover:border-indigo-500/50 hover:shadow-indigo-500/20">
                 <video id="local-video" class="w-full h-full object-cover" autoplay muted playsinline></video>
-                <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                <div class="absolute bottom-1.5 left-1.5 sm:bottom-3 sm:left-3 flex gap-1 sm:gap-2">
-                    <div id="local-mic-indicator" class="glass-panel-dark px-1.5 py-1 sm:px-2.5 sm:py-1.5 rounded-md sm:rounded-xl hidden shadow-lg border border-red-500/30 backdrop-blur-md">
-                        <i class="fas fa-microphone-slash text-red-400 text-[8px] sm:text-xs"></i>
+                <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <div class="absolute bottom-1.5 left-1.5 sm:bottom-2 sm:left-2 flex gap-1 sm:gap-1.5">
+                    <div id="local-mic-indicator" class="bg-[#fa4b61]/95 backdrop-blur-md px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-md hidden shadow-sm border border-[#fa4b61]/50">
+                        <i class="fas fa-microphone-slash text-white text-[8px] sm:text-[10px]"></i>
                     </div>
                 </div>
-                <div class="absolute top-1.5 right-1.5 sm:top-3 sm:right-3 glass-panel-dark px-1.5 py-0.5 sm:px-3 sm:py-1 rounded-md sm:rounded-xl text-[8px] sm:text-[10px] font-bold text-white uppercase tracking-wider backdrop-blur-md" data-i18n="you_label">You</div>
+                <!-- Local Hand Indicator -->
+                <div id="local-hand-indicator" class="absolute top-1.5 left-1.5 sm:top-2 sm:left-2 bg-yellow-500/90 backdrop-blur-md px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-md hidden shadow-sm border border-yellow-400/50">
+                    <i class="fas fa-hand-paper text-white text-[10px] sm:text-xs"></i>
+                </div>
+                <div class="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 bg-black/60 backdrop-blur-md px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md text-[8px] sm:text-[10px] font-bold text-white shadow-sm border border-white/10" data-i18n="you_label">You</div>
             </div>
 
-            <!-- Floating Controls Pill (Bottom Bar) -->
-            <div class="absolute bottom-4 sm:bottom-8 w-full px-3 flex justify-center z-50 pointer-events-none">
-                <!-- Wrapper for horizontal scroll on very tiny screens -->
-                <div class="max-w-full glass-panel-dark rounded-[2rem] sm:rounded-[2.5rem] shadow-[0_20px_40px_rgba(0,0,0,0.6)] border border-white/10 backdrop-blur-xl pointer-events-auto">
-                    <div class="flex items-center gap-1.5 sm:gap-3 px-2 py-2 sm:px-5 sm:py-3 overflow-x-auto hide-scroll">
-                        
-                        <!-- Mic Toggle -->
-                        <button id="btn-mic" onclick="toggleMic()" class="w-11 h-11 sm:w-14 sm:h-14 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all duration-300 shadow-lg group relative overflow-hidden shrink-0 active:scale-95" style="touch-action: manipulation;">
-                            <span class="absolute inset-0 bg-white/5 transform scale-0 group-hover:scale-100 rounded-full transition-transform duration-300 origin-center"></span>
-                            <i class="fas fa-microphone text-sm sm:text-xl group-hover:-translate-y-0.5 transition-transform relative z-10"></i>
+            <!-- PREMIUM DOCK UI (Mobile Responsive) -->
+            <div class="absolute bottom-3 sm:bottom-6 w-full px-2 sm:px-4 flex justify-center z-50 pointer-events-none">
+                <div class="bg-[#121825] rounded-[24px] sm:rounded-[28px] shadow-[0_10px_40px_rgba(0,0,0,0.6)] border border-white/[0.04] pointer-events-auto p-1.5 sm:p-2 flex items-center gap-1 sm:gap-2 overflow-x-auto hide-scroll max-w-[calc(100%-16px)] sm:max-w-full transition-all">
+                    
+                    <!-- Media Controls -->
+                    <div class="relative has-tooltip">
+                        <button id="btn-mic" onclick="toggleMic()" class="w-11 h-11 sm:w-[54px] sm:h-[54px] rounded-[16px] sm:rounded-[18px] flex items-center justify-center transition-all duration-300 active:scale-95 group relative bg-[#293145] hover:bg-[#343d52] text-white shrink-0">
+                            <i class="fas fa-microphone text-base sm:text-xl group-hover:-translate-y-0.5 transition-transform"></i>
                         </button>
-                        
-                        <!-- Camera Toggle -->
-                        <button id="btn-video" onclick="toggleVideo()" class="w-11 h-11 sm:w-14 sm:h-14 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all duration-300 shadow-lg group relative overflow-hidden shrink-0 active:scale-95" style="touch-action: manipulation;">
-                            <span class="absolute inset-0 bg-white/5 transform scale-0 group-hover:scale-100 rounded-full transition-transform duration-300 origin-center"></span>
-                            <i class="fas fa-video text-sm sm:text-xl group-hover:-translate-y-0.5 transition-transform relative z-10"></i>
+                        <span class="tooltip hidden sm:block absolute -top-12 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg opacity-0 invisible transition-all duration-200 whitespace-nowrap shadow-lg border border-white/10">Toggle Microphone</span>
+                    </div>
+                    
+                    <div class="relative has-tooltip">
+                        <button id="btn-video" onclick="toggleVideo()" class="w-11 h-11 sm:w-[54px] sm:h-[54px] rounded-[16px] sm:rounded-[18px] flex items-center justify-center transition-all duration-300 active:scale-95 group relative bg-[#293145] hover:bg-[#343d52] text-white shrink-0">
+                            <i class="fas fa-video text-base sm:text-xl group-hover:-translate-y-0.5 transition-transform"></i>
                         </button>
+                        <span class="tooltip hidden sm:block absolute -top-12 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg opacity-0 invisible transition-all duration-200 whitespace-nowrap shadow-lg border border-white/10">Toggle Camera</span>
+                    </div>
 
-                        <!-- Screen Share Toggle (Visible on mobile too if supported) -->
-                        <button id="btn-screen" onclick="toggleScreenShare()" class="w-11 h-11 sm:w-14 sm:h-14 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all duration-300 shadow-lg group relative overflow-hidden shrink-0 active:scale-95" style="touch-action: manipulation;">
-                            <span class="absolute inset-0 bg-white/5 transform scale-0 group-hover:scale-100 rounded-full transition-transform duration-300 origin-center"></span>
-                            <i class="fas fa-desktop text-sm sm:text-xl group-hover:-translate-y-0.5 transition-transform relative z-10"></i>
+                    <!-- Screen share hidden on mobile for better fit & UX -->
+                    <div class="relative has-tooltip hidden sm:block">
+                        <button id="btn-screen" onclick="toggleScreenShare()" class="w-11 h-11 sm:w-[54px] sm:h-[54px] rounded-[16px] sm:rounded-[18px] flex items-center justify-center transition-all duration-300 active:scale-95 group relative bg-[#293145] hover:bg-[#343d52] text-white shrink-0">
+                            <i class="fas fa-desktop text-base sm:text-xl group-hover:-translate-y-0.5 transition-transform"></i>
                         </button>
-                        
-                        <div class="w-px h-6 sm:h-8 bg-white/10 mx-0.5 sm:mx-1 shrink-0"></div>
+                        <span class="tooltip hidden sm:block absolute -top-12 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg opacity-0 invisible transition-all duration-200 whitespace-nowrap shadow-lg border border-white/10">Present Screen</span>
+                    </div>
+                    
+                    <div class="relative has-tooltip">
+                        <button id="btn-hand" onclick="toggleRaiseHand()" class="w-11 h-11 sm:w-[54px] sm:h-[54px] rounded-[16px] sm:rounded-[18px] flex items-center justify-center transition-all duration-300 active:scale-95 group relative bg-[#293145] hover:bg-[#343d52] text-white shrink-0">
+                            <i class="fas fa-hand-paper text-base sm:text-xl group-hover:-translate-y-0.5 transition-transform"></i>
+                        </button>
+                        <span class="tooltip hidden sm:block absolute -top-12 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg opacity-0 invisible transition-all duration-200 whitespace-nowrap shadow-lg border border-white/10">Raise Hand</span>
+                    </div>
 
-                        <!-- Participants Toggle -->
-                        <button id="btn-participants" onclick="toggleSidebar('participants')" class="w-11 h-11 sm:w-14 sm:h-14 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all duration-300 shadow-lg group relative overflow-hidden shrink-0 active:scale-95" style="touch-action: manipulation;">
-                            <span class="absolute inset-0 bg-white/5 transform scale-0 group-hover:scale-100 rounded-full transition-transform duration-300 origin-center"></span>
-                            <i class="fas fa-users text-sm sm:text-xl group-hover:-translate-y-0.5 transition-transform relative z-10"></i>
-                            <span id="participants-badge" class="absolute top-0 right-0 sm:top-1 sm:right-1 bg-indigo-500 text-white text-[8px] sm:text-[10px] font-bold w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center shadow-md border-2 border-slate-900 hidden z-20 transition-all duration-300">1</span>
+                    <!-- Divider -->
+                    <div class="w-px h-6 sm:h-8 bg-[#273142] mx-0.5 sm:mx-1 shrink-0"></div>
+
+                    <!-- Interactive Panels -->
+                    <div class="relative has-tooltip">
+                        <button id="btn-participants" onclick="toggleSidebar('participants')" class="w-11 h-11 sm:w-[54px] sm:h-[54px] rounded-[16px] sm:rounded-[18px] flex items-center justify-center transition-all duration-300 active:scale-95 group relative bg-[#293145] hover:bg-[#343d52] text-white shrink-0">
+                            <i class="fas fa-users text-base sm:text-xl group-hover:-translate-y-0.5 transition-transform"></i>
+                            <span id="participants-badge" class="absolute -top-1 -right-1 bg-indigo-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center shadow-lg border border-[#121825] hidden">1</span>
                         </button>
-                        
-                        <!-- Chat Toggle -->
-                        <button id="btn-chat" onclick="toggleSidebar('chat')" class="w-11 h-11 sm:w-14 sm:h-14 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all duration-300 shadow-lg group relative overflow-hidden shrink-0 active:scale-95" style="touch-action: manipulation;">
-                            <span class="absolute inset-0 bg-white/5 transform scale-0 group-hover:scale-100 rounded-full transition-transform duration-300 origin-center"></span>
-                            <i class="fas fa-comment-dots text-sm sm:text-xl group-hover:-translate-y-0.5 transition-transform relative z-10"></i>
-                            <span id="chat-badge" class="absolute top-0 right-0 sm:top-1 sm:right-1 bg-rose-500 text-white text-[8px] sm:text-[10px] font-bold w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center shadow-md border-2 border-slate-900 hidden z-20 animate-bounce">!</span>
+                        <span class="tooltip hidden sm:block absolute -top-12 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg opacity-0 invisible transition-all duration-200 whitespace-nowrap shadow-lg border border-white/10">People</span>
+                    </div>
+                    
+                    <div class="relative has-tooltip">
+                        <button id="btn-chat" onclick="toggleSidebar('chat')" class="w-11 h-11 sm:w-[54px] sm:h-[54px] rounded-[16px] sm:rounded-[18px] flex items-center justify-center transition-all duration-300 active:scale-95 group relative bg-[#293145] hover:bg-[#343d52] text-white shrink-0">
+                            <i class="fas fa-comment-dots text-base sm:text-xl group-hover:-translate-y-0.5 transition-transform"></i>
+                            <span id="chat-badge" class="absolute -top-1 -right-1 bg-rose-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center shadow-lg border border-[#121825] hidden animate-pulse">!</span>
                         </button>
-                        
-                        <div class="w-px h-6 sm:h-8 bg-white/10 mx-0.5 sm:mx-1 shrink-0"></div>
-                        
-                        <!-- End Call -->
-                        <button onclick="endCall()" class="w-14 h-11 sm:w-20 sm:h-14 rounded-[1.2rem] sm:rounded-[1.5rem] bg-rose-500 hover:bg-rose-600 text-white flex items-center justify-center transition-all duration-300 shadow-[0_0_15px_rgba(244,63,94,0.4)] hover:shadow-[0_0_30px_rgba(244,63,94,0.6)] group shrink-0 active:scale-95" style="touch-action: manipulation;">
-                            <i class="fas fa-phone-slash text-sm sm:text-xl group-hover:scale-110 transition-transform"></i>
+                        <span class="tooltip hidden sm:block absolute -top-12 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg opacity-0 invisible transition-all duration-200 whitespace-nowrap shadow-lg border border-white/10">Chat</span>
+                    </div>
+
+                    <!-- Host Controls Button -->
+                    <div id="btn-host-wrap" class="relative has-tooltip hidden">
+                        <button onclick="toggleSidebar('settings')" class="w-11 h-11 sm:w-[54px] sm:h-[54px] rounded-[16px] sm:rounded-[18px] flex items-center justify-center transition-all duration-300 active:scale-95 group relative bg-[#174636] hover:bg-[#1b5240] text-[#22c55e] shrink-0">
+                            <i class="fas fa-shield-alt text-base sm:text-xl group-hover:-translate-y-0.5 transition-transform"></i>
                         </button>
+                        <span class="tooltip hidden sm:block absolute -top-12 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg opacity-0 invisible transition-all duration-200 whitespace-nowrap shadow-lg border border-white/10">Host Controls</span>
+                    </div>
+                    
+                    <!-- Divider -->
+                    <div class="w-px h-6 sm:h-8 bg-[#273142] mx-0.5 sm:mx-1 shrink-0"></div>
+                    
+                    <!-- End Call -->
+                    <div class="relative has-tooltip">
+                        <button onclick="endCall()" class="w-[60px] h-11 sm:w-[80px] sm:h-[54px] rounded-[16px] sm:rounded-[18px] flex items-center justify-center transition-all duration-300 active:scale-95 group relative bg-[#fa4b61] hover:bg-[#e03e52] text-white shadow-[0_0_15px_rgba(250,75,97,0.15)] shrink-0">
+                            <i class="fas fa-phone-slash text-lg sm:text-2xl group-hover:scale-110 transition-transform"></i>
+                        </button>
+                        <span class="tooltip hidden sm:block absolute -top-12 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg opacity-0 invisible transition-all duration-200 whitespace-nowrap shadow-lg border border-white/10">Leave Call</span>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Sidebar (Chat & Participants) -->
-        <!-- Fixed full screen on mobile, right panel on desktop -->
-        <div id="sidebar" class="fixed inset-y-0 right-0 w-full sm:w-[380px] glass-panel-dark sm:border-l border-white/5 flex flex-col transition-transform duration-500 transform translate-x-full z-[90] shadow-[-10px_0_30px_rgba(0,0,0,0.4)] backdrop-blur-3xl">
-            
-            <!-- Sidebar Header -->
-            <div class="p-4 sm:p-5 border-b border-white/5 flex justify-between items-center bg-white/5">
+        <!-- Sidebar -->
+        <div id="sidebar" class="fixed inset-y-0 right-0 w-full sm:w-[380px] bg-gray-900/95 backdrop-blur-3xl sm:border-l border-white/10 flex flex-col transition-transform duration-500 transform translate-x-full z-[90] shadow-2xl">
+            <div class="p-4 pt-safe-top sm:p-5 border-b border-white/10 flex justify-between items-center bg-gray-950/50">
                 <h3 id="sidebar-title" class="text-white font-bold text-base sm:text-lg tracking-wide" data-i18n="chat_title">Chat</h3>
-                <button onclick="closeSidebar()" class="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-all active:scale-90 shadow-sm border border-white/5">
+                <button onclick="closeSidebar()" class="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/15 flex items-center justify-center text-slate-300 hover:text-white transition-all active:scale-95 border border-white/5">
                     <i class="fas fa-times text-sm"></i>
                 </button>
             </div>
 
-            <!-- Chat Content -->
-            <div id="chat-content" class="flex-grow flex flex-col hidden h-full">
-                <div id="chat-messages" class="flex-grow overflow-y-auto p-4 sm:p-5 space-y-4 custom-scroll flex flex-col">
-                    <div class="text-center bg-white/5 rounded-2xl py-3 px-4 mx-auto border border-white/5">
-                        <i class="fas fa-lock text-indigo-400 mb-2 text-base sm:text-lg"></i>
-                        <p class="text-[10px] sm:text-[11px] text-slate-400 font-medium leading-relaxed" data-i18n="secure_chat_welcome">Welcome to secure chat.<br>Messages are end-to-end encrypted and disappear when the call ends.</p>
+            <!-- Chat Panel -->
+            <div id="chat-content" class="flex-grow flex flex-col hidden h-full overflow-hidden">
+                <div id="chat-messages" class="flex-grow overflow-y-auto p-4 sm:p-5 space-y-4 custom-scroll flex flex-col relative pb-4">
+                    <div class="text-center bg-indigo-500/10 rounded-2xl py-3 px-4 mx-auto border border-indigo-500/20 max-w-[250px]">
+                        <i class="fas fa-lock text-indigo-400 text-sm mb-2"></i>
+                        <p class="text-[10px] sm:text-[11px] text-indigo-200 font-medium leading-relaxed" data-i18n="secure_chat_welcome">Messages are end-to-end encrypted.</p>
                     </div>
                 </div>
-                <div class="p-3 sm:p-5 border-t border-white/5 bg-slate-900/50 backdrop-blur-xl">
-                    <form id="chat-form" onsubmit="sendChatMessage(event)" class="flex gap-2 bg-white/5 p-1.5 rounded-2xl border border-white/10 focus-within:border-indigo-500/50 transition-colors">
-                        <input type="text" id="chat-input" data-i18n-placeholder="chat_placeholder" placeholder="Type a message..." class="flex-grow bg-transparent text-white text-base sm:text-sm rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 outline-none placeholder-slate-500" disabled>
-                        <button type="submit" id="chat-submit" class="bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl px-4 sm:px-5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shadow-lg shadow-indigo-500/20 active:scale-95" disabled>
-                            <i class="fas fa-paper-plane text-xs sm:text-sm"></i>
-                        </button>
-                    </form>
+                
+                <div class="border-t border-white/10 bg-gray-950/80 flex flex-col relative z-20">
+                    <!-- Reply Banner UI -->
+                    <div id="reply-banner" class="hidden px-3 py-2 bg-gray-800/80 border-b border-white/5 flex justify-between items-center text-xs backdrop-blur-md">
+                        <div class="flex flex-col truncate pr-2 border-l-2 border-indigo-500 pl-2 w-full">
+                            <span class="text-indigo-400 font-bold text-[10px]" id="reply-to-name">Name</span>
+                            <span class="text-slate-300 truncate text-[11px]" id="reply-to-text">Text...</span>
+                        </div>
+                        <button onclick="cancelReply()" class="text-slate-400 hover:text-white p-1 ml-2 bg-white/5 hover:bg-white/10 rounded-md transition-colors"><i class="fas fa-times"></i></button>
+                    </div>
+                    
+                    <!-- Input Area -->
+                    <div class="p-3 pb-safe sm:p-4">
+                        <form id="chat-form" onsubmit="sendChatMessage(event)" class="flex gap-2 bg-gray-800 p-1.5 rounded-xl sm:rounded-2xl border border-white/10 focus-within:border-indigo-500/50 transition-colors shadow-inner">
+                            <input type="text" id="chat-input" data-i18n-placeholder="chat_placeholder" placeholder="Type a message..." class="flex-grow bg-transparent text-white text-[13px] sm:text-sm rounded-lg sm:rounded-xl px-3 py-2 outline-none placeholder-slate-500 font-medium" disabled>
+                            <button type="submit" id="chat-submit" class="bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg sm:rounded-xl w-10 h-10 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed shrink-0 active:scale-95" disabled>
+                                <i class="fas fa-paper-plane text-sm"></i>
+                            </button>
+                        </form>
+                    </div>
                 </div>
             </div>
 
-            <!-- Participants Content -->
-            <div id="participants-content" class="flex-grow overflow-y-auto p-3 sm:p-5 custom-scroll hidden">
-                <div class="space-y-2 sm:space-y-3" id="participants-list">
-                    <!-- Participants will be dynamically generated -->
+            <!-- Participants Panel -->
+            <div id="participants-content" class="flex-grow overflow-y-auto p-4 custom-scroll hidden flex-col gap-4">
+                
+                <!-- Waiting Room (Host Only) -->
+                <div id="waiting-room-section" class="hidden flex-col gap-2">
+                    <h4 class="text-xs font-bold text-indigo-400 uppercase tracking-wider pl-1 flex justify-between items-center">
+                        <span data-i18n="waiting_room">Waiting Room</span>
+                        <span id="waiting-count" class="bg-indigo-500 text-white px-2 py-0.5 rounded-md text-[10px]">0</span>
+                    </h4>
+                    <div id="waiting-list" class="space-y-2"></div>
+                    <div class="w-full h-px bg-white/10 my-2"></div>
+                </div>
+
+                <div class="space-y-2" id="participants-list"></div>
+            </div>
+
+            <!-- Host Settings Panel -->
+            <div id="settings-content" class="flex-grow overflow-y-auto p-5 custom-scroll hidden flex-col gap-6">
+                <!-- Lock Meeting -->
+                <div class="flex items-center justify-between bg-gray-800/50 p-4 rounded-xl border border-white/5">
+                    <div>
+                        <h4 class="text-white font-medium text-sm" data-i18n="lock_meeting">Lock Meeting</h4>
+                        <p class="text-slate-400 text-[10px] mt-1" data-i18n="lock_desc">Prevent anyone else from joining.</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="toggle-lock" class="sr-only peer" onchange="updateHostSettings('locked', this.checked)">
+                        <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:bg-rose-500 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all border border-gray-600"></div>
+                    </label>
+                </div>
+
+                <!-- Waiting Room Toggle -->
+                <div class="flex items-center justify-between bg-gray-800/50 p-4 rounded-xl border border-white/5">
+                    <div>
+                        <h4 class="text-white font-medium text-sm" data-i18n="quick_access">Quick Access</h4>
+                        <p class="text-slate-400 text-[10px] mt-1" data-i18n="quick_access_desc">Turn off for waiting room approval.</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="toggle-waiting" class="sr-only peer" checked onchange="updateHostSettings('waitingRoom', !this.checked)">
+                        <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:bg-emerald-500 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all border border-gray-600"></div>
+                    </label>
+                </div>
+
+                <!-- Mute on Entry -->
+                <div class="flex items-center justify-between bg-gray-800/50 p-4 rounded-xl border border-white/5">
+                    <div>
+                        <h4 class="text-white font-medium text-sm" data-i18n="mute_on_entry">Mute on Entry</h4>
+                        <p class="text-slate-400 text-[10px] mt-1" data-i18n="mute_entry_desc">New participants join muted.</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="toggle-mute-entry" class="sr-only peer" onchange="updateHostSettings('muteOnEntry', this.checked)">
+                        <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:bg-indigo-500 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all border border-gray-600"></div>
+                    </label>
+                </div>
+
+                <!-- Screen Share Control -->
+                <div class="flex items-center justify-between bg-gray-800/50 p-4 rounded-xl border border-white/5">
+                    <div>
+                        <h4 class="text-white font-medium text-sm" data-i18n="allow_screen_share">Share Screen</h4>
+                        <p class="text-slate-400 text-[10px] mt-1" data-i18n="screen_share_desc">Let participants share screens.</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="toggle-screen" class="sr-only peer" checked onchange="updateHostSettings('screenShare', this.checked)">
+                        <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:bg-indigo-500 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all border border-gray-600"></div>
+                    </label>
+                </div>
+
+                <!-- Chat Control -->
+                <div class="bg-gray-800/50 p-4 rounded-xl border border-white/5">
+                    <h4 class="text-white font-medium text-sm mb-3" data-i18n="chat_mode">Chat Restrictions</h4>
+                    <select id="select-chat-mode" onchange="updateHostSettings('chat', this.value)" class="w-full bg-gray-900 border border-white/10 text-white text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2.5 outline-none">
+                        <option value="all" data-i18n="chat_all">Everyone</option>
+                        <option value="host-only" data-i18n="chat_host">Host Only</option>
+                        <option value="disabled" data-i18n="chat_disabled">Disabled</option>
+                    </select>
+                </div>
+
+                <!-- Smart Quick Actions -->
+                <div class="bg-gray-800/50 p-4 rounded-xl border border-white/5 flex flex-col gap-2.5">
+                    <h4 class="text-white font-medium text-sm mb-1" data-i18n="meeting_actions">Quick Actions</h4>
+                    
+                    <button onclick="muteAll()" class="w-full bg-[#293145] hover:bg-[#343d52] text-white py-2.5 rounded-lg text-xs font-bold transition-all active:scale-95 flex items-center justify-center gap-2 border border-white/5">
+                        <i class="fas fa-microphone-slash text-slate-400"></i> <span data-i18n="mute_all">Mute All Participants</span>
+                    </button>
+
+                    <button onclick="endMeetingForAll()" class="w-full bg-[#fa4b61]/20 hover:bg-[#fa4b61] text-[#fa4b61] hover:text-white py-2.5 rounded-lg text-xs font-bold transition-all active:scale-95 flex items-center justify-center gap-2 border border-[#fa4b61]/30">
+                        <i class="fas fa-power-off"></i> <span data-i18n="end_for_all">End Meeting for Everyone</span>
+                    </button>
                 </div>
             </div>
 
         </div>
-
     </div>
 
     <script>
-        // --- Translation & i18n System (Bangla Latin / English) ---
+        // --- Smart Translations ---
         const i18n = {
             en: {
-                app_desc: "Secure, high-quality group video calls right in your browser. Connect with up to 20 people instantly.",
-                accessing_camera: "Accessing Camera",
-                name_placeholder: "What's your name?",
-                new_meeting_btn: "Start New Meeting",
-                or_join: "Or join existing",
-                link_placeholder: "Paste link or ID",
+                main_heading: "Premium video meetings.<br><span class=\"text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600\">Now free for everyone.</span>",
+                app_desc: "Connect, collaborate, and celebrate from anywhere with VISCORA's lightning-fast, secure network.",
+                accessing_camera: "Initializing Lens",
+                name_placeholder: "Enter your display name",
+                new_meeting_btn: "New meeting",
+                link_placeholder: "Enter a code or link",
                 join_btn: "Join",
-                no_signup: "No sign-ups required. 100% Peer-to-Peer.",
-                secure_call: "Secure",
+                secure_call: "Encrypted",
                 meeting_link: "Meeting Link",
-                copy_link_tooltip: "Copy Meeting Link",
-                only_one_here: "You're the only one here",
-                share_link_desc: "Share the meeting link below with the people you want to meet. Up to 20 users can join this secure room.",
-                click_to_copy: "Click to copy link",
-                you_label: "You",
-                chat_title: "Chat",
-                secure_chat_welcome: "Welcome to secure chat.<br>Messages are end-to-end encrypted and disappear when the call ends.",
+                only_one_here: "Waiting for others",
+                share_link_desc: "Share this link to invite people to the meeting.",
+                chat_title: "Messages",
+                secure_chat_welcome: "Messages are end-to-end encrypted.",
                 chat_placeholder: "Type a message...",
-                meeting_host: "Meeting Host",
+                chat_disabled_msg: "Chat is disabled by host.",
+                meeting_host: "Host",
                 participant: "Participant",
-                in_call: "In Call",
-                allow_cam_mic: "Please allow camera/microphone access first.",
-                generating_link: "Generating Meeting Link...",
-                enter_id_link: "Please enter a Room ID or Link",
-                connecting_meeting: "Connecting to meeting...",
-                joining: "Joining...",
+                in_call: "People",
+                allow_cam_mic: "Camera & mic access required.",
+                generating_link: "Creating Secure Room...",
+                enter_id_link: "Please enter a valid link/code",
+                connecting_meeting: "Requesting to Join...",
                 connecting: "Connecting...",
-                joined_room: "has joined the room.",
-                left_room: "left the room.",
-                meeting_not_found: "Meeting not found. The host may have ended it.",
-                conn_error: "Connection error occurred.",
+                waiting_for_host: "Waiting for host to approve request...",
+                meeting_not_found: "Room not found or ended.",
                 camera_off: "Camera Off",
-                camera_unavailable: "Camera Unavailable",
-                share_screen_prompt: "Share your screen when someone joins!",
-                wait_for_chat: "Wait for someone to join before chatting.",
-                no_mic: "No physical microphone connected.",
-                no_cam: "No physical camera connected.",
-                mic_not_found: "No microphone available.",
-                cam_not_found: "No camera available.",
-                left_meeting: "You left the meeting.",
-                link_copied: "Meeting Link copied to clipboard!",
-                link_copy_failed: "Failed to copy link.",
-                guest: "Guest"
+                camera_unavailable: "Camera Blocked",
+                share_screen_prompt: "Wait for someone to join to present.",
+                wait_for_chat: "Wait for someone to join to chat.",
+                no_mic: "Microphone not detected.",
+                no_cam: "Camera not detected.",
+                left_meeting: "You left the room.",
+                link_copied: "Link Copied!",
+                link_copy_failed: "Failed to copy.",
+                guest: "Guest",
+                you_label: "You",
+                host_controls: "Host Controls",
+                waiting_room: "Waiting Room",
+                lock_meeting: "Lock Meeting",
+                lock_desc: "Prevent anyone else from joining.",
+                quick_access: "Quick Access",
+                quick_access_desc: "Turn off for waiting room approval.",
+                allow_screen_share: "Share Screen",
+                screen_share_desc: "Let participants share screens.",
+                chat_mode: "Chat Restrictions",
+                chat_all: "Everyone",
+                chat_host: "Host Only",
+                chat_disabled: "Disabled",
+                admit: "Admit",
+                deny: "Deny",
+                removed_by_host: "You were removed by the host.",
+                meeting_locked: "Meeting is locked by host.",
+                mute_on_entry: "Mute on Entry",
+                mute_entry_desc: "New participants join muted.",
+                meeting_actions: "Quick Actions",
+                mute_all: "Mute All Participants",
+                lower_hands: "Lower All Hands",
+                end_for_all: "End Meeting for Everyone",
+                muted_by_host_entry: "You were muted upon entry by the host.",
+                meeting_ended_by_host: "Host has ended the meeting for everyone.",
+                locked_lobby_title: "Meeting Locked",
+                locked_lobby_desc: "Host is reviewing your request to join."
             },
             bn: {
-                app_desc: "ব্রাউজার থেকেই সুরক্ষিত, উচ্চ-মানের গ্রুপ ভিডিও কল। একসাথে ২০ জনের সাথে সংযুক্ত হোন।",
+                main_heading: "প্রিমিয়াম ভিডিও মিটিং।<br><span class=\"text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600\">এখন সবার জন্য ফ্রি।</span>",
+                app_desc: "QuickMeet এর দ্রুত ও সুরক্ষিত নেটওয়ার্কের মাধ্যমে যেকোনো জায়গা থেকে যুক্ত হোন।",
                 accessing_camera: "ক্যামেরা চালু হচ্ছে",
-                name_placeholder: "আপনার নাম কী?",
-                new_meeting_btn: "নতুন মিটিং শুরু করুন",
-                or_join: "অথবা অন্য মিটিংয়ে যোগ দিন",
-                link_placeholder: "লিঙ্ক বা আইডি পেস্ট করুন",
+                name_placeholder: "আপনার নাম দিন",
+                new_meeting_btn: "নতুন মিটিং",
+                link_placeholder: "কোড বা লিঙ্ক দিন",
                 join_btn: "যোগ দিন",
-                no_signup: "কোনো সাইন-আপের প্রয়োজন নেই। ১০০% পিয়ার-টু-পিয়ার।",
-                secure_call: "নিরাপদ",
+                secure_call: "এনক্রিপ্টেড",
                 meeting_link: "মিটিং লিঙ্ক",
-                copy_link_tooltip: "মিটিং লিঙ্ক কপি করুন",
-                only_one_here: "এখানে শুধু আপনি আছেন",
-                share_link_desc: "যাদের সাথে মিটিং করতে চান, তাদের সাথে নিচের লিঙ্কটি শেয়ার করুন। এই সুরক্ষিত রুমে ২০ জন পর্যন্ত যোগ দিতে পারবেন।",
-                click_to_copy: "লিঙ্ক কপি করতে এখানে ক্লিক করুন",
-                you_label: "আপনি",
-                chat_title: "চ্যাট",
-                secure_chat_welcome: "সুরক্ষিত চ্যাটে স্বাগতম।<br>বার্তাগুলো এন্ড-টু-এন্ড এনক্রিপ্টেড এবং কল শেষ হলে মুছে যাবে।",
-                chat_placeholder: "একটি বার্তা লিখুন...",
-                meeting_host: "মিটিং হোস্ট",
-                participant: "অংশগ্রহণকারী",
-                in_call: "কলে আছেন",
-                allow_cam_mic: "দয়া করে ক্যামেরা/মাইক্রোফোনের অনুমতি দিন।",
-                generating_link: "মিটিং লিঙ্ক তৈরি হচ্ছে...",
-                enter_id_link: "দয়া করে একটি রুম আইডি বা লিঙ্ক দিন",
-                connecting_meeting: "মিটিংয়ে সংযুক্ত হচ্ছে...",
-                joining: "যোগ দিচ্ছে...",
+                only_one_here: "অন্যদের জন্য অপেক্ষা করা হচ্ছে",
+                share_link_desc: "মানুষকে আমন্ত্রণ জানাতে এই লিঙ্কটি শেয়ার করুন।",
+                chat_title: "বার্তা",
+                secure_chat_welcome: "বার্তাগুলো এনক্রিপ্টেড।",
+                chat_placeholder: "বার্তা লিখুন...",
+                chat_disabled_msg: "হোস্ট চ্যাট বন্ধ করেছে।",
+                meeting_host: "হোস্ট",
+                participant: "সদস্য",
+                in_call: "মানুষ",
+                allow_cam_mic: "ক্যামেরা ও মাইক অ্যাক্সেস প্রয়োজন।",
+                generating_link: "সুরক্ষিত রুম তৈরি হচ্ছে...",
+                enter_id_link: "সঠিক লিঙ্ক বা কোড দিন",
+                connecting_meeting: "যোগ দেওয়ার অনুরোধ করা হচ্ছে...",
                 connecting: "সংযুক্ত হচ্ছে...",
-                joined_room: "রুমে যোগ দিয়েছেন।",
-                left_room: "রুম থেকে বিদায় নিয়েছেন।",
-                meeting_not_found: "মিটিং খুঁজে পাওয়া যায়নি। হোস্ট হয়তো মিটিং শেষ করেছেন।",
-                conn_error: "সংযোগ ত্রুটি ঘটেছে।",
+                waiting_for_host: "হোস্টের অনুমোদনের জন্য অপেক্ষা করুন...",
+                meeting_not_found: "রুম পাওয়া যায়নি।",
                 camera_off: "ক্যামেরা বন্ধ",
-                camera_unavailable: "ক্যামেরা পাওয়া যাচ্ছে না",
-                share_screen_prompt: "কেউ যোগ দিলে আপনার স্ক্রিন শেয়ার করুন!",
-                wait_for_chat: "চ্যাট করার জন্য কেউ যোগ দেওয়া পর্যন্ত অপেক্ষা করুন।",
-                no_mic: "কোনো ফিজিক্যাল মাইক্রোফোন সংযুক্ত নেই।",
-                no_cam: "কোনো ফিজিক্যাল ক্যামেরা সংযুক্ত নেই।",
-                mic_not_found: "কোনো মাইক্রোফোন পাওয়া যায়নি।",
-                cam_not_found: "কোনো ক্যামেরা পাওয়া যায়নি।",
-                left_meeting: "আপনি মিটিং থেকে বের হয়ে গেছেন।",
-                link_copied: "মিটিং লিঙ্ক ক্লিপবোর্ডে কপি করা হয়েছে!",
-                link_copy_failed: "লিঙ্ক কপি করতে ব্যর্থ হয়েছে।",
-                guest: "অতিথি"
+                camera_unavailable: "ক্যামেরা ব্লক করা আছে",
+                share_screen_prompt: "স্ক্রিন শেয়ার করতে কেউ আসা পর্যন্ত অপেক্ষা করুন।",
+                wait_for_chat: "চ্যাট করতে কেউ আসা পর্যন্ত অপেক্ষা করুন।",
+                no_mic: "মাইক্রোফোন পাওয়া যায়নি।",
+                no_cam: "ক্যামেরা পাওয়া যায়নি।",
+                left_meeting: "আপনি রুম ত্যাগ করেছেন।",
+                link_copied: "লিঙ্ক কপি হয়েছে!",
+                link_copy_failed: "কপি করতে ব্যর্থ।",
+                guest: "অতিথি",
+                you_label: "আপনি",
+                host_controls: "হোস্ট সেটিংস",
+                waiting_room: "ওয়েটিং রুম",
+                lock_meeting: "মিটিং লক করুন",
+                lock_desc: "নতুনদের যোগ দেওয়া বন্ধ করুন।",
+                quick_access: "কুইক অ্যাক্সেস",
+                quick_access_desc: "ওয়েটিং রুমের জন্য এটি বন্ধ করুন।",
+                allow_screen_share: "স্ক্রিন শেয়ার",
+                screen_share_desc: "সদস্যদের স্ক্রিন শেয়ারের অনুমতি দিন।",
+                chat_mode: "চ্যাট কন্ট্রোল",
+                chat_all: "সবাই",
+                chat_host: "শুধু হোস্ট",
+                chat_disabled: "বন্ধ",
+                admit: "অনুমোদন",
+                deny: "বাতিল",
+                removed_by_host: "হোস্ট আপনাকে বের করে দিয়েছে।",
+                meeting_locked: "মিটিংটি হোস্ট লক করেছে।",
+                mute_on_entry: "মিউট অন এন্ট্রি",
+                mute_entry_desc: "নতুনরা মিউট অবস্থায় জয়েন করবে।",
+                meeting_actions: "কুইক অ্যাকশন",
+                mute_all: "সবার মাইক মিউট করুন",
+                lower_hands: "সবার হাত নামিয়ে দিন",
+                end_for_all: "সবার জন্য মিটিং শেষ করুন",
+                muted_by_host_entry: "হোস্টের সেটিং অনুযায়ী আপনি মিউট অবস্থায় জয়েন করেছেন।",
+                meeting_ended_by_host: "হোস্ট সবার জন্য মিটিংটি শেষ করে দিয়েছেন।",
+                locked_lobby_title: "মিটিং লক করা আছে",
+                locked_lobby_desc: "হোস্ট আপনার রিকুয়েস্ট দেখছেন।"
             }
         };
         
         let currentLang = 'en';
-
-        function t(key) {
-            return i18n[currentLang][key] || key;
-        }
+        function t(key) { return i18n[currentLang][key] || key; }
 
         function updateLanguage() {
-            // Update simple text tags
             document.querySelectorAll('[data-i18n]').forEach(el => {
                 const key = el.getAttribute('data-i18n');
-                if (i18n[currentLang][key]) {
-                    el.innerHTML = i18n[currentLang][key];
-                }
+                if (i18n[currentLang][key]) el.innerHTML = i18n[currentLang][key];
             });
-            
-            // Update placeholders
             document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
                 const key = el.getAttribute('data-i18n-placeholder');
-                if (i18n[currentLang][key]) {
-                    el.placeholder = i18n[currentLang][key];
-                }
+                if (i18n[currentLang][key]) el.placeholder = i18n[currentLang][key];
             });
-            
-            // Update titles (tooltips)
-            document.querySelectorAll('[data-i18n-title]').forEach(el => {
-                const key = el.getAttribute('data-i18n-title');
-                if (i18n[currentLang][key]) {
-                    el.title = i18n[currentLang][key];
-                }
-            });
-
-            // Update toggle button text
             document.getElementById('lang-toggle-text').innerText = currentLang === 'en' ? 'বাংলা' : 'English';
-
-            // Refresh UI components that use translated strings dynamically
-            if (activeRoomId) {
-                updateParticipantsList();
-                if (activeSidebar === 'participants') {
-                    const totalCount = Object.keys(peers).length + 1;
-                    ui.sidebarTitle.innerText = `${t('in_call')} (${totalCount})`;
-                } else if (activeSidebar === 'chat') {
-                    ui.sidebarTitle.innerText = t('chat_title');
-                }
-            }
+            if (activeRoomId) updateParticipantsList();
         }
 
         function toggleLanguage() {
@@ -494,30 +647,37 @@
             updateLanguage();
         }
 
-        // --- Core State Variables ---
+        // --- Core State ---
         let peer = null;
         let localStream = null;
-        
         let isMicMuted = false;
         let isCamOff = false;
         let activeRoomId = ''; 
         let isDummyStream = false;
         let isScreenSharing = false;
         let screenStream = null;
-        
         let activeSidebar = null; 
         let unreadMessages = 0;
-
         let localUserName = '';
-
-        // MESH NETWORK STATE
         const peers = {};
 
-        // --- DOM Elements ---
-        const screens = {
-            setup: document.getElementById('setup-screen'),
-            call: document.getElementById('call-screen')
+        // --- Premium Host Features State ---
+        let isHost = false;
+        let meetingSettings = {
+            locked: false,
+            waitingRoom: false, // Default is Quick Access (waiting room off)
+            screenShare: true,
+            chat: 'all', // 'all', 'host-only', 'disabled'
+            muteOnEntry: false 
         };
+        let waitingQueue = {}; // Tracks pending joins
+        let raisedHands = new Set();
+        let myHandRaised = false;
+        let chatHistory = []; // Stores all chat messages for replay
+        let activeReplyTo = null; // Stores message being replied to
+
+        // --- DOM Elements ---
+        const screens = { setup: document.getElementById('setup-screen'), call: document.getElementById('call-screen') };
         const ui = {
             previewVideo: document.getElementById('preview-video'),
             localVideo: document.getElementById('local-video'),
@@ -530,11 +690,14 @@
             btnMic: document.getElementById('btn-mic'),
             btnVideo: document.getElementById('btn-video'),
             btnScreen: document.getElementById('btn-screen'),
+            btnHand: document.getElementById('btn-hand'),
             localMicIndicator: document.getElementById('local-mic-indicator'),
+            localHandIndicator: document.getElementById('local-hand-indicator'),
             sidebar: document.getElementById('sidebar'),
             videoArea: document.getElementById('video-area'),
             chatContent: document.getElementById('chat-content'),
             participantsContent: document.getElementById('participants-content'),
+            settingsContent: document.getElementById('settings-content'),
             sidebarTitle: document.getElementById('sidebar-title'),
             chatMessages: document.getElementById('chat-messages'),
             chatInput: document.getElementById('chat-input'),
@@ -542,73 +705,36 @@
             chatBadge: document.getElementById('chat-badge'),
             participantsBadge: document.getElementById('participants-badge'),
             participantsList: document.getElementById('participants-list'),
-            userNameInput: document.getElementById('user-name-input')
+            userNameInput: document.getElementById('user-name-input'),
+            btnHostWrap: document.getElementById('btn-host-wrap'),
+            lobbyOverlay: document.getElementById('waiting-lobby-overlay'),
+            lobbyTitle: document.getElementById('waiting-lobby-title'),
+            lobbyDesc: document.getElementById('waiting-lobby-desc')
         };
 
-        // --- URL Parameter Parsing ---
         function checkUrlParams() {
             try {
                 if (window.location.protocol !== 'blob:') {
-                    const urlParams = new URLSearchParams(window.location.search);
-                    const roomToJoin = urlParams.get('room');
-                    if (roomToJoin) {
-                        document.getElementById('join-id-input').value = roomToJoin;
-                    }
+                    const params = new URLSearchParams(window.location.search);
+                    if (params.get('room')) document.getElementById('join-id-input').value = params.get('room');
                 }
-            } catch (e) {
-                console.warn("URL parameter check error", e);
-            }
+            } catch (e) {}
         }
-
-        // --- Initialization & Net Optimization ---
 
         function createDummyStream() {
             const canvas = document.createElement('canvas');
-            canvas.width = 640;
-            canvas.height = 480;
+            canvas.width = 640; canvas.height = 480;
             const ctx = canvas.getContext('2d');
-            
             setInterval(() => {
-                ctx.save();
-                ctx.fillStyle = '#0f172a'; // slate-900
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                
-                // CRITICAL FIX: Move origin to center, flip canvas horizontally so text isn't mirrored when video is mirrored by CSS
-                ctx.translate(canvas.width / 2, canvas.height / 2);
-                ctx.scale(-1, 1);
-                
-                ctx.fillStyle = '#64748b'; // slate-500
-                ctx.font = '600 24px "Plus Jakarta Sans"';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
+                ctx.fillStyle = '#0f172a'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.translate(canvas.width / 2, canvas.height / 2); ctx.scale(-1, 1);
+                ctx.fillStyle = '#475569'; ctx.font = '600 24px "Plus Jakarta Sans"';
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
                 ctx.fillText(t('camera_off'), 0, 0);
-                
-                const time = Date.now() / 1000;
-                const x = Math.sin(time) * 50;
-                const y = 40;
-                ctx.fillStyle = '#6366f1'; 
-                ctx.beginPath();
-                ctx.arc(x, y, 6, 0, Math.PI*2);
-                ctx.fill();
-                
                 ctx.restore();
-            }, 1000/15); 
-            
-            const videoStream = canvas.captureStream(15);
-            const tracks = [videoStream.getVideoTracks()[0]];
-            
-            try {
-                const AudioContext = window.AudioContext || window.webkitAudioContext;
-                if (AudioContext) {
-                    const audioCtx = new AudioContext();
-                    const dest = audioCtx.createMediaStreamDestination();
-                    if (dest.stream.getAudioTracks().length > 0) {
-                        tracks.push(dest.stream.getAudioTracks()[0]);
-                    }
-                }
-            } catch (e) { console.warn("Could not create dummy audio track", e); }
-            
-            return new MediaStream(tracks);
+            }, 100); 
+            const videoStream = canvas.captureStream(10);
+            return new MediaStream([videoStream.getVideoTracks()[0]]);
         }
 
         async function initializeMedia() {
@@ -616,37 +742,22 @@
             checkUrlParams(); 
 
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                console.warn("Media devices API not available.");
-                showToast(t('cam_not_found'));
+                showToast(t('no_cam'));
                 setupDummyStreamFallback();
             } else {
-                
-                // LOW BANDWIDTH OPTIMIZATION
-                const optimalConstraints = {
-                    audio: {
-                        echoCancellation: true,
-                        noiseSuppression: true,
-                        autoGainControl: true
-                    },
-                    video: {
-                        width: { max: 480, ideal: 320 },
-                        height: { max: 360, ideal: 240 },
-                        frameRate: { max: 15, ideal: 10 }
-                    }
-                };
-
                 try {
-                    localStream = await navigator.mediaDevices.getUserMedia(optimalConstraints);
+                    localStream = await navigator.mediaDevices.getUserMedia({
+                        audio: { echoCancellation: true, noiseSuppression: true },
+                        video: { width: { max: 640, ideal: 480 }, height: { max: 480, ideal: 360 } }
+                    });
                 } catch (err) {
                     try {
-                        localStream = await navigator.mediaDevices.getUserMedia({ video: optimalConstraints.video, audio: false });
-                        isMicMuted = true;
-                        updateMicUI();
+                        localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+                        isMicMuted = true; updateMicUI();
                     } catch (err2) {
                         try {
-                            localStream = await navigator.mediaDevices.getUserMedia({ video: false, audio: optimalConstraints.audio });
-                            isCamOff = true;
-                            updateVideoUI();
+                            localStream = await navigator.mediaDevices.getUserMedia({ video: false, audio: true });
+                            isCamOff = true; updateVideoUI();
                         } catch (err3) {
                             setupDummyStreamFallback();
                         }
@@ -663,134 +774,193 @@
         }
 
         function setupDummyStreamFallback() {
-            try {
-                localStream = createDummyStream();
-                isDummyStream = true;
-                isCamOff = true;
-                isMicMuted = true;
-                updateVideoUI();
-                updateMicUI();
-            } catch (e) {
-                ui.previewOverlay.innerHTML = `<div class="w-10 h-10 sm:w-14 sm:h-14 bg-rose-500/20 rounded-full flex items-center justify-center mb-3 sm:mb-4"><i class="fas fa-video-slash text-xl sm:text-2xl text-rose-400"></i></div><span class="text-[10px] sm:text-xs font-bold tracking-wider uppercase text-rose-200">${t('camera_unavailable')}</span>`;
-            }
+            localStream = createDummyStream();
+            isDummyStream = true; isCamOff = true; isMicMuted = true;
+            updateVideoUI(); updateMicUI();
+            ui.previewOverlay.innerHTML = `<i class="fas fa-video-slash text-2xl text-slate-500 mb-2"></i><span class="text-xs font-bold uppercase text-slate-400">${t('camera_unavailable')}</span>`;
         }
 
-        window.addEventListener('load', initializeMedia);
+        function updateClock() {
+            const now = new Date();
+            let hours = now.getHours();
+            let minutes = now.getMinutes();
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12 || 12;
+            minutes = minutes < 10 ? '0' + minutes : minutes;
+            const timeEl = document.getElementById('meeting-time');
+            if (timeEl) timeEl.innerText = `${hours}:${minutes} ${ampm}`;
+        }
+        setInterval(updateClock, 1000);
 
-        // --- Core WebRTC / PeerJS Logic (MESH) ---
+        window.addEventListener('load', () => {
+            initializeMedia();
+            updateClock();
+        });
 
         function initPeer() {
-            return new Peer({
-                config: {'iceServers': [
-                    { urls: 'stun:stun.l.google.com:19302' },
-                    { urls: 'stun:stun1.l.google.com:19302' },
-                    { urls: 'stun:stun.cloudflare.com:3478' }, // Added Cloudflare STUN for better reliability
-                    { urls: 'stun:global.stun.twilio.com:3478' }
-                ]}
-            });
+            return new Peer({ config: {'iceServers': [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }]} });
         }
 
+        // --- Host: Create Room ---
         function createRoom() {
-            if (!localStream) {
-                showToast(t('allow_cam_mic'));
-                return;
-            }
-
+            if (!localStream) return showToast(t('allow_cam_mic'));
             localUserName = ui.userNameInput.value.trim() || t('meeting_host');
+            isHost = true;
+            ui.btnHostWrap.classList.remove('hidden'); // Show Host Controls
+            
             switchScreen('call');
             showToast(t('generating_link'));
-
             peer = initPeer();
-
             peer.on('open', (id) => {
                 activeRoomId = id; 
                 const link = getRoomLink(id);
-                ui.displayRoomId.innerText = link;
-                ui.waitingRoomId.innerText = link;
-                ui.roomInfo.classList.remove('hidden');
-                ui.roomInfo.classList.add('flex');
+                ui.displayRoomId.innerText = link; ui.waitingRoomId.innerText = link;
+                ui.roomInfo.classList.remove('hidden'); ui.roomInfo.classList.add('flex');
                 ui.waitingMessage.classList.remove('hidden');
-                
                 updateParticipantsList(); 
                 setupPeerListeners();
             });
+            handlePeerErrors();
+            applyMeetingSettings();
+        }
 
+        // --- Guest: Join Room ---
+        function joinRoom() {
+            let inputId = document.getElementById('join-id-input').value.trim();
+            if (!inputId) return showToast(t('enter_id_link'));
+            if (!localStream) return showToast(t('allow_cam_mic'));
+
+            localUserName = ui.userNameInput.value.trim() || t('guest');
+            if (inputId.includes('?room=')) inputId = inputId.split('?room=')[1].split('&')[0];
+            activeRoomId = inputId;
+            isHost = false;
+            ui.btnHostWrap.classList.add('hidden');
+
+            switchScreen('call');
+            ui.roomInfo.classList.add('hidden'); ui.waitingMessage.classList.add('hidden');
+            
+            peer = initPeer();
+            peer.on('open', () => {
+                setupPeerListeners();
+                startJoinHandshake(inputId); 
+            });
             handlePeerErrors();
         }
 
-        function joinRoom() {
-            let inputId = document.getElementById('join-id-input').value.trim();
-            if (!inputId) {
-                showToast(t('enter_id_link'));
-                return;
-            }
-            if (!localStream) {
-                showToast(t('allow_cam_mic'));
-                return;
-            }
-
-            localUserName = ui.userNameInput.value.trim() || t('guest');
-
-            if (inputId.includes('?room=')) {
-                inputId = inputId.split('?room=')[1].split('&')[0];
-            }
-            activeRoomId = inputId;
-
-            switchScreen('call');
-            ui.roomInfo.classList.add('hidden'); 
-            ui.waitingMessage.classList.add('hidden');
-            showToast(t('connecting_meeting'));
-
-            peer = initPeer();
-
-            peer.on('open', () => {
-                setupPeerListeners();
-                initiateConnection(inputId); 
+        // --- NEW: Handshake Protocol (Waiting Room logic) ---
+        function startJoinHandshake(hostId) {
+            ui.lobbyOverlay.classList.remove('hidden');
+            ui.lobbyOverlay.classList.add('flex');
+            
+            // Connect specifying this is an initial join request
+            const conn = peer.connect(hostId, { metadata: { name: localUserName, type: 'join-request' } });
+            
+            conn.on('open', () => {
+                conn.send({ type: 'join-request', name: localUserName });
             });
 
-            handlePeerErrors();
+            conn.on('data', data => {
+                if (data.type === 'join-response') {
+                    if (data.status === 'approved') {
+                        meetingSettings = data.settings;
+                        applyMeetingSettings();
+                        
+                        // Mute on entry logic
+                        if (meetingSettings.muteOnEntry) {
+                            if (!isMicMuted) toggleMic();
+                            showToast(t('muted_by_host_entry'));
+                        }
+
+                        // Hide lobby overlay
+                        ui.lobbyOverlay.classList.add('hidden');
+                        ui.lobbyOverlay.classList.remove('flex');
+                        
+                        // Proceed with full Media Call & Data Connection
+                        peers[hostId] = { name: t('meeting_host'), data: conn };
+                        setupDataConnEvents(conn);
+                        
+                        const call = peer.call(hostId, localStream, { metadata: { name: localUserName } });
+                        peers[hostId].call = call;
+                        setupMediaCallEvents(call);
+
+                    } else if (data.status === 'pending') {
+                        if (data.reason === 'locked') {
+                            ui.lobbyTitle.innerText = t('locked_lobby_title');
+                            ui.lobbyDesc.innerText = t('locked_lobby_desc');
+                        } else {
+                            ui.lobbyTitle.innerText = "In Lobby";
+                            ui.lobbyDesc.innerText = t('waiting_for_host');
+                        }
+                    } else if (data.status === 'rejected') {
+                        showToast(t(data.reason === 'locked' ? 'meeting_locked' : 'removed_by_host'));
+                        endCall();
+                    }
+                }
+            });
+
+            conn.on('close', () => {
+                if (!peers[hostId]) { // If closed before full approval
+                    endCall();
+                }
+            });
         }
 
         function setupPeerListeners() {
+            // Media Connection handling
             peer.on('call', (call) => {
-                // CRITICAL FIX: Extract name from metadata if available immediately
                 const callerName = call.metadata?.name || t('joining');
                 if (!peers[call.peer]) peers[call.peer] = { name: callerName };
                 peers[call.peer].call = call;
-                
                 call.answer(localStream);
                 setupMediaCallEvents(call);
-                
                 ui.waitingMessage.classList.add('hidden');
             });
 
+            // Data Connection handling (Host intercept & Mesh connection)
             peer.on('connection', (conn) => {
-                const connectorName = conn.metadata?.name || t('joining');
-                if (!peers[conn.peer]) peers[conn.peer] = { name: connectorName };
-                peers[conn.peer].data = conn;
-                
-                setupDataConnEvents(conn);
+                if (isHost && conn.metadata?.type === 'join-request') {
+                    // Host intercepts join request
+                    conn.on('data', data => {
+                        if (data.type === 'join-request') {
+                            if (meetingSettings.locked) {
+                                waitingQueue[conn.peer] = { name: data.name, conn: conn };
+                                conn.send({ type: 'join-response', status: 'pending', reason: 'locked' });
+                                renderWaitingRoom();
+                            } else if (meetingSettings.waitingRoom) {
+                                waitingQueue[conn.peer] = { name: data.name, conn: conn };
+                                conn.send({ type: 'join-response', status: 'pending', reason: 'waiting' });
+                                renderWaitingRoom();
+                            } else {
+                                // Quick Access approved
+                                approveGuest(conn.peer, data.name, conn);
+                            }
+                        }
+                    });
+                    conn.on('close', () => {
+                        if (waitingQueue[conn.peer]) {
+                            delete waitingQueue[conn.peer];
+                            renderWaitingRoom();
+                        }
+                    });
+                } else {
+                    // Standard Mesh Data Connection
+                    const connectorName = conn.metadata?.name || t('joining');
+                    if (!peers[conn.peer]) peers[conn.peer] = { name: connectorName };
+                    peers[conn.peer].data = conn;
+                    setupDataConnEvents(conn);
+                }
             });
         }
 
-        function initiateConnection(targetPeerId) {
-            // Check if already connecting or connected
-            if (peers[targetPeerId] && (peers[targetPeerId].call || peers[targetPeerId].data)) return; 
-            
+        function initiateMeshConnection(targetPeerId) {
+            if (peers[targetPeerId]) return;
             peers[targetPeerId] = { name: t('connecting') };
             
-            // Pass name in metadata so the other side knows instantly
             const call = peer.call(targetPeerId, localStream, { metadata: { name: localUserName } });
-            if (call) {
-                peers[targetPeerId].call = call;
-                setupMediaCallEvents(call);
-            }
-
-            const conn = peer.connect(targetPeerId, { metadata: { name: localUserName } });
-            if (conn) {
-                peers[targetPeerId].data = conn;
-                setupDataConnEvents(conn);
-            }
+            if (call) { peers[targetPeerId].call = call; setupMediaCallEvents(call); }
+            
+            const conn = peer.connect(targetPeerId, { metadata: { name: localUserName, type: 'mesh' } });
+            if (conn) { peers[targetPeerId].data = conn; setupDataConnEvents(conn); }
         }
 
         function setupMediaCallEvents(call) {
@@ -802,615 +972,797 @@
             });
             call.on('close', () => removePeer(call.peer));
             call.on('error', () => removePeer(call.peer));
-
-            // CRITICAL FIX: Monitor ICE connection state to remove dropped peers immediately
             setTimeout(() => {
                 if (call.peerConnection) {
                     call.peerConnection.addEventListener('iceconnectionstatechange', () => {
                         const state = call.peerConnection.iceConnectionState;
-                        if (state === 'failed' || state === 'disconnected' || state === 'closed') {
-                            const pName = peers[call.peer]?.name || '';
-                            // Only show error if they didn't intentionally leave
-                            if (peers[call.peer]) {
-                                showToast(t('conn_error') + (pName ? ` (${pName})` : ''));
-                                removePeer(call.peer);
-                            }
-                        }
+                        if (['failed', 'disconnected', 'closed'].includes(state)) removePeer(call.peer);
                     });
                 }
             }, 1500);
         }
 
         function setupDataConnEvents(conn) {
-            ui.chatInput.disabled = false;
-            ui.chatSubmit.disabled = false;
+            // Unblock chat if allowed
+            applyMeetingSettings();
 
-            const sendHandshake = () => {
-                if (conn.open) {
-                    conn.send({ type: 'handshake', name: localUserName });
-                }
-            };
-
-            // THIS IS THE CRITICAL FIX: Data channel open logic reliably sends handshake
-            if (conn.open) {
-                sendHandshake();
-            } else {
-                conn.on('open', sendHandshake);
-            }
+            const sendHandshake = () => { if (conn.open) conn.send({ type: 'handshake', name: localUserName }); };
+            if (conn.open) sendHandshake(); else conn.on('open', sendHandshake);
 
             conn.on('data', (data) => {
                 if (data.type === 'handshake') {
                     if (peers[conn.peer]) {
                         peers[conn.peer].name = data.name;
-                        updateParticipantsList();
-                        updateVideoLabel(conn.peer, data.name);
-                        
+                        updateParticipantsList(); updateVideoLabel(conn.peer, data.name);
                         const avatar = document.getElementById(`avatar-${conn.peer}`);
                         if (avatar) avatar.innerText = data.name.charAt(0).toUpperCase();
                     }
-
-                    if (peer && peer.id === activeRoomId) {
+                    if (isHost) {
+                        // Send mesh peer list
                         const existingPeers = Object.keys(peers).filter(p => p !== conn.peer);
-                        if (existingPeers.length > 0) {
-                            conn.send({ type: 'peer-list', list: existingPeers });
+                        if (existingPeers.length > 0) conn.send({ type: 'peer-list', list: existingPeers });
+                        
+                        // Send chat history for replay
+                        if (chatHistory.length > 0) {
+                            conn.send({ type: 'chat-history', history: chatHistory });
                         }
                     }
                 } 
                 else if (data.type === 'peer-list') {
-                    data.list.forEach(peerId => {
-                        if (peer && peerId !== peer.id && !peers[peerId]) {
-                            initiateConnection(peerId);
-                        }
-                    });
+                    data.list.forEach(peerId => { if (peer && peerId !== peer.id && !peers[peerId]) initiateMeshConnection(peerId); });
                 } 
                 else if (data.type === 'chat') {
+                    const chatObj = data.chatObj;
                     const senderName = peers[conn.peer]?.name || t('guest');
-                    appendMessage(data.text, 'them', senderName);
+                    chatObj.senderName = senderName; // Update local reference
+                    
+                    chatHistory.push(chatObj);
+                    appendMessage(chatObj, 'them');
+                    
                     if (activeSidebar !== 'chat') {
                         unreadMessages++;
                         ui.chatBadge.innerText = unreadMessages > 9 ? '9+' : unreadMessages;
                         ui.chatBadge.classList.remove('hidden');
                     }
                 }
-                else if (data.type === 'leaving') {
-                    removePeer(conn.peer);
+                else if (data.type === 'reaction') {
+                    handleIncomingReaction(data.messageId, data.emoji, data.senderName);
                 }
+                // --- HOST/REALTIME EVENTS ---
+                else if (data.type === 'chat-history') {
+                    // Receive and replay chat history if empty
+                    if (!isHost && chatHistory.length === 0) {
+                        chatHistory = data.history;
+                        chatHistory.forEach(msg => {
+                            const senderType = (msg.senderName === localUserName) ? 'me' : 'them';
+                            appendMessage(msg, senderType);
+                        });
+                    }
+                }
+                else if (data.type === 'host-command') {
+                    handleHostCommand(data.command, data.payload);
+                }
+                else if (data.type === 'raise-hand') {
+                    if (data.state) raisedHands.add(conn.peer); else raisedHands.delete(conn.peer);
+                    updateParticipantsList(); updateVideoLabel(conn.peer, peers[conn.peer]?.name); // re-render indicator
+                }
+                else if (data.type === 'leaving') { removePeer(conn.peer); }
             });
-
+            
             conn.on('close', () => removePeer(conn.peer));
             conn.on('error', () => removePeer(conn.peer));
         }
 
         function handlePeerErrors() {
             peer.on('error', (err) => {
-                // We handle peer-unavailable gracefully
                 if (err.type === 'peer-unavailable') {
-                    // Safely extract failed peer ID
-                    let failedPeerId = null;
-                    if (err.message && err.message.includes('Could not connect to peer')) {
-                         failedPeerId = err.message.split('Could not connect to peer ')[1];
+                    let failedId = err.message && err.message.includes('connect to peer') ? err.message.split('peer ')[1] : null;
+                    if (failedId) removePeer(failedId);
+                    if (Object.keys(peers).length === 0 && activeRoomId && peer.id !== activeRoomId && !ui.lobbyOverlay.classList.contains('flex')) {
+                        showToast(t('meeting_not_found')); endCall();
                     }
-                    
-                    if (failedPeerId) {
-                        removePeer(failedPeerId);
-                    }
-
-                    // Only show critical error if we are the guest trying to connect to host
-                    if (Object.keys(peers).length === 0 && activeRoomId && peer && peer.id !== activeRoomId) {
-                        showToast(t('meeting_not_found'));
-                        endCall();
-                    }
-                } else if (err.type === 'network' || err.type === 'disconnected' || err.type === 'server-error') {
-                    // Do nothing for console, just ignore
-                } else {
-                    showToast(t('conn_error'));
                 }
             });
         }
 
-        // --- Dynamic Video Grid Rendering ---
+        // --- Video Render Logic ---
         function addVideoElement(peerId, stream) {
-            const existingContainer = document.getElementById(`video-container-${peerId}`);
-            
-            if (existingContainer) {
-                const existingVideo = document.getElementById(`video-${peerId}`);
-                if (existingVideo && existingVideo.srcObject !== stream) {
-                    existingVideo.srcObject = stream;
-                    existingVideo.play().catch(e => console.warn(e));
-                }
-                return; 
-            }
+            if (document.getElementById(`video-container-${peerId}`)) return; 
             
             const container = document.createElement('div');
             container.id = `video-container-${peerId}`;
-            container.className = 'relative w-full h-full min-h-[140px] sm:min-h-[180px] rounded-2xl sm:rounded-[2rem] overflow-hidden shadow-2xl bg-slate-900 border border-white/5 transition-all duration-500 flex items-center justify-center group transform scale-[0.98] opacity-0';
-
-            // Check if stream actually has video tracks
-            const hasVideo = stream.getVideoTracks().length > 0;
+            container.className = 'relative w-full h-full min-h-[140px] sm:min-h-[200px] rounded-[1rem] sm:rounded-[1.5rem] overflow-hidden shadow-xl bg-gray-800 border border-white/5 transition-all duration-500 flex items-center justify-center group opacity-0 scale-95';
 
             const video = document.createElement('video');
-            video.id = `video-${peerId}`;
             video.srcObject = stream;
-            // CRITICAL FIX: explicitly set HTML attributes for iOS/mobile compatibility
-            video.setAttribute('autoplay', '');
-            video.setAttribute('playsinline', '');
-            video.autoplay = true;
-            video.playsInline = true;
-            video.muted = false; 
-            video.volume = 1; 
-            video.className = `w-full h-full object-cover transition-transform duration-700 mirror-video group-hover:scale-105 ${hasVideo ? '' : 'hidden'}`;
+            video.autoplay = true; video.playsInline = true; video.muted = false;
+            video.className = 'w-full h-full object-cover mirror-video transition-transform duration-700 group-hover:scale-105';
             
-            // Safely start video to avoid mobile browser autoplay policies blocking media
             video.onloadedmetadata = () => {
-                video.play().catch(e => console.warn("Autoplay blocked:", e));
-                container.classList.remove('scale-[0.98]', 'opacity-0');
-                container.classList.add('scale-100', 'opacity-100');
+                video.play().catch(e => console.warn(e));
+                container.classList.remove('opacity-0', 'scale-95');
+                container.classList.add('opacity-100', 'scale-100');
             };
             
             const overlay = document.createElement('div');
-            overlay.className = 'absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-60 transition-opacity group-hover:opacity-80 pointer-events-none';
+            overlay.className = 'absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none';
+
+            const nameWrap = document.createElement('div');
+            nameWrap.className = 'absolute bottom-2 left-2 sm:bottom-3 sm:left-3 flex gap-2 items-center';
+            
+            const handIcon = document.createElement('div');
+            handIcon.id = `hand-${peerId}`;
+            handIcon.className = `bg-yellow-500/90 backdrop-blur-md px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-md shadow-sm border border-yellow-400/50 ${raisedHands.has(peerId) ? '' : 'hidden'}`;
+            handIcon.innerHTML = `<i class="fas fa-hand-paper text-white text-[10px] sm:text-xs"></i>`;
 
             const nameLabel = document.createElement('div');
             nameLabel.id = `label-${peerId}`;
-            nameLabel.className = 'absolute bottom-3 left-3 sm:bottom-4 sm:left-4 glass-panel-dark px-3 py-1 sm:px-4 sm:py-1.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-semibold text-white tracking-wide shadow-lg z-10 border border-white/10 backdrop-blur-md max-w-[80%] truncate pointer-events-none';
+            nameLabel.className = 'bg-black/50 backdrop-blur-md px-2 py-1 sm:px-3 sm:py-1.5 rounded-md sm:rounded-lg text-[10px] sm:text-xs font-bold text-white shadow-sm border border-white/10 pointer-events-none max-w-[80%] truncate';
             const peerName = peers[peerId]?.name || t('connecting');
             nameLabel.innerText = peerName;
 
-            // Avatar fallback for audio-only streams (Black Screen Fix)
+            nameWrap.append(handIcon, nameLabel);
+
             const avatarOverlay = document.createElement('div');
-            avatarOverlay.className = `absolute inset-0 flex flex-col items-center justify-center bg-slate-800 ${hasVideo ? 'hidden' : 'flex'}`;
-            avatarOverlay.innerHTML = `<div id="avatar-${peerId}" class="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-slate-700 flex items-center justify-center text-2xl sm:text-3xl font-bold text-slate-300 shadow-inner border border-white/5">${peerName.charAt(0).toUpperCase()}</div>`;
+            avatarOverlay.className = `absolute inset-0 flex flex-col items-center justify-center bg-gray-800 ${stream.getVideoTracks().length > 0 ? 'hidden' : 'flex'}`;
+            avatarOverlay.innerHTML = `<div id="avatar-${peerId}" class="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-indigo-600 flex items-center justify-center text-2xl sm:text-3xl font-extrabold text-white shadow-inner">${peerName.charAt(0).toUpperCase()}</div>`;
             
-            container.appendChild(video);
-            container.appendChild(avatarOverlay);
-            container.appendChild(overlay);
-            container.appendChild(nameLabel);
+            container.append(video, avatarOverlay, overlay, nameWrap);
             ui.videoGrid.appendChild(container);
-            
             updateGridClasses();
         }
 
         function updateVideoLabel(peerId, name) {
             const label = document.getElementById(`label-${peerId}`);
-            if (label) label.innerText = name;
+            if (label) label.innerText = name || t('guest');
+            const hand = document.getElementById(`hand-${peerId}`);
+            if (hand) { if (raisedHands.has(peerId)) hand.classList.remove('hidden'); else hand.classList.add('hidden'); }
         }
 
         function removePeer(peerId) {
             if (peers[peerId]) {
-                const name = peers[peerId].name || t('guest');
                 if (peers[peerId].call) peers[peerId].call.close();
                 if (peers[peerId].data) peers[peerId].data.close();
-                // appendMessage(`${name} ${t('left_room')}`, 'system');
                 delete peers[peerId];
             }
-            
+            raisedHands.delete(peerId);
             const el = document.getElementById(`video-container-${peerId}`);
             if (el) {
-                el.classList.replace('scale-100', 'scale-95');
-                el.classList.replace('opacity-100', 'opacity-0');
+                el.classList.add('opacity-0', 'scale-95');
                 setTimeout(() => el.remove(), 300);
             }
-            
             updateParticipantsList();
             setTimeout(updateGridClasses, 300); 
         }
 
         function updateGridClasses() {
             const count = Object.keys(peers).length;
-            
-            ui.videoGrid.className = 'w-full h-full p-3 sm:p-6 pt-20 sm:pt-28 pb-[120px] sm:pb-36 gap-2 sm:gap-6 grid place-items-center transition-all duration-500 ease-in-out custom-scroll overflow-y-auto';
-            
+            ui.videoGrid.className = 'w-full h-full p-2 sm:p-6 pt-20 sm:pt-24 pb-[110px] sm:pb-36 gap-2 sm:gap-6 grid place-items-center transition-all duration-500 ease-in-out custom-scroll overflow-y-auto';
             if (count === 0) {
-                if (peer && peer.id === activeRoomId) {
-                    ui.waitingMessage.classList.remove('hidden');
-                }
+                if (peer && peer.id === activeRoomId) ui.waitingMessage.classList.remove('hidden');
             } else {
                 ui.waitingMessage.classList.add('hidden');
-                
-                // Adjusted for better mobile grid logic
-                if (count === 1) {
-                    ui.videoGrid.classList.add('grid-cols-1', 'max-w-5xl', 'mx-auto');
-                } else if (count === 2) {
-                    ui.videoGrid.classList.add('grid-cols-1', 'sm:grid-cols-2', 'max-w-6xl', 'mx-auto');
-                } else if (count <= 4) {
-                    ui.videoGrid.classList.add('grid-cols-2', 'max-w-7xl', 'mx-auto');
-                } else if (count <= 6) {
-                    ui.videoGrid.classList.add('grid-cols-2', 'md:grid-cols-3', 'max-w-7xl', 'mx-auto');
-                } else if (count <= 9) {
-                    ui.videoGrid.classList.add('grid-cols-2', 'md:grid-cols-3', 'lg:grid-cols-4', 'max-w-full');
-                } else {
-                    ui.videoGrid.classList.add('grid-cols-3', 'md:grid-cols-4', 'lg:grid-cols-5', 'max-w-full');
-                }
+                if (count === 1) ui.videoGrid.classList.add('grid-cols-1', 'max-w-5xl', 'mx-auto');
+                else if (count <= 4) ui.videoGrid.classList.add('grid-cols-2', 'max-w-6xl', 'mx-auto');
+                else if (count <= 9) ui.videoGrid.classList.add('grid-cols-3', 'max-w-7xl');
+                else ui.videoGrid.classList.add('grid-cols-4', 'max-w-full');
             }
         }
 
-        // --- Screen Sharing ---
-        async function toggleScreenShare() {
-            if (Object.keys(peers).length === 0) {
-                showToast(t('share_screen_prompt'));
-                return;
-            }
+        // --- Controls Actions (Mobile Adaptive) ---
+        const baseBtnCls = "w-11 h-11 sm:w-[54px] sm:h-[54px] rounded-[16px] sm:rounded-[18px] flex items-center justify-center transition-all duration-300 active:scale-95 group relative shrink-0";
+        const darkBtnCls = `${baseBtnCls} bg-[#293145] hover:bg-[#343d52] text-white`;
+        const redBtnCls  = `${baseBtnCls} bg-[#fa4b61] hover:bg-[#e03e52] text-white shadow-[0_0_15px_rgba(250,75,97,0.15)]`;
+        const greenBtnCls = `${baseBtnCls} bg-[#174636] hover:bg-[#1b5240] text-[#22c55e]`;
 
+        function updateMicUI() {
+            const icon = ui.btnMic.querySelector('i');
+            if (isMicMuted) {
+                icon.className = 'fas fa-microphone-slash text-base sm:text-xl text-white';
+                ui.btnMic.className = redBtnCls;
+                ui.localMicIndicator.classList.remove('hidden');
+            } else {
+                icon.className = 'fas fa-microphone text-base sm:text-xl text-white group-hover:-translate-y-0.5 transition-transform';
+                ui.btnMic.className = darkBtnCls;
+                ui.localMicIndicator.classList.add('hidden');
+            }
+        }
+
+        function updateVideoUI() {
+            const icon = ui.btnVideo.querySelector('i');
+            if (isCamOff) {
+                icon.className = 'fas fa-video-slash text-base sm:text-xl text-white';
+                ui.btnVideo.className = redBtnCls;
+            } else {
+                icon.className = 'fas fa-video text-base sm:text-xl text-white group-hover:-translate-y-0.5 transition-transform';
+                ui.btnVideo.className = darkBtnCls;
+            }
+        }
+
+        function toggleMic() {
+            if (!localStream) return;
+            if (isDummyStream) return showToast(t('no_mic'));
+            const tracks = localStream.getAudioTracks();
+            if (tracks.length > 0) { isMicMuted = !isMicMuted; tracks[0].enabled = !isMicMuted; updateMicUI(); }
+            else showToast(t('no_mic'));
+        }
+
+        function toggleVideo() {
+            if (!localStream) return;
+            if (isDummyStream) return showToast(t('no_cam'));
+            const tracks = localStream.getVideoTracks();
+            if (tracks.length > 0) { isCamOff = !isCamOff; tracks[0].enabled = !isCamOff; updateVideoUI(); }
+            else showToast(t('no_cam'));
+        }
+
+        async function toggleScreenShare() {
+            if (Object.keys(peers).length === 0) return showToast(t('share_screen_prompt'));
+            if (!meetingSettings.screenShare && !isHost) return showToast("Host has disabled screen sharing.");
+            
             if (!isScreenSharing) {
                 try {
-                    // Optimized Screen Share Frame Rate for Low Bandwidth
-                    screenStream = await navigator.mediaDevices.getDisplayMedia({ 
-                        video: { frameRate: { ideal: 10, max: 15 } } 
-                    });
+                    screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
                     const videoTrack = screenStream.getVideoTracks()[0];
-                    
                     Object.values(peers).forEach(p => {
                         if (p.call && p.call.peerConnection) {
                             const sender = p.call.peerConnection.getSenders().find(s => s.track.kind === 'video');
                             if (sender) sender.replaceTrack(videoTrack);
                         }
                     });
-                    
                     isScreenSharing = true;
-                    ui.btnScreen.classList.replace('bg-white/10', 'bg-indigo-500');
-                    ui.btnScreen.classList.replace('hover:bg-white/20', 'hover:bg-indigo-600');
-                    ui.btnScreen.querySelector('i').classList.replace('fa-desktop', 'fa-stop-circle');
-                    
+                    ui.btnScreen.className = `${baseBtnCls} bg-indigo-500 hover:bg-indigo-600 text-white`;
                     videoTrack.onended = () => stopScreenShare();
-                } catch (e) {
-                    console.error("Screen share failed", e);
-                }
-            } else {
-                stopScreenShare();
-            }
+                } catch (e) { console.error(e); }
+            } else { stopScreenShare(); }
         }
 
         function stopScreenShare() {
             if (!isScreenSharing) return;
-            
             const videoTrack = localStream.getVideoTracks()[0];
-            
             Object.values(peers).forEach(p => {
                 if (p.call && p.call.peerConnection) {
                     const sender = p.call.peerConnection.getSenders().find(s => s.track.kind === 'video');
                     if (sender) sender.replaceTrack(videoTrack);
                 }
             });
-            
-            if (screenStream) {
-                screenStream.getTracks().forEach(track => track.stop());
-            }
-            
+            if (screenStream) screenStream.getTracks().forEach(t => t.stop());
             isScreenSharing = false;
-            ui.btnScreen.classList.replace('bg-indigo-500', 'bg-white/10');
-            ui.btnScreen.classList.replace('hover:bg-indigo-600', 'hover:bg-white/20');
-            ui.btnScreen.querySelector('i').classList.replace('fa-stop-circle', 'fa-desktop');
+            ui.btnScreen.className = darkBtnCls;
         }
 
-        // --- Chat System ---
+        function toggleRaiseHand() {
+            myHandRaised = !myHandRaised;
+            
+            // Update UI
+            if (myHandRaised) {
+                ui.btnHand.className = `${baseBtnCls} bg-yellow-500 hover:bg-yellow-600 text-white shadow-[0_0_15px_rgba(234,179,8,0.3)]`;
+                ui.localHandIndicator.classList.remove('hidden');
+            } else {
+                ui.btnHand.className = darkBtnCls;
+                ui.localHandIndicator.classList.add('hidden');
+            }
+
+            // Broadcast
+            Object.values(peers).forEach(p => {
+                if (p.data && p.data.open) p.data.send({ type: 'raise-hand', state: myHandRaised });
+            });
+            updateParticipantsList();
+        }
+
+        // --- Utils for Chat ---
+        function escapeHtml(unsafe) {
+            return (unsafe || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        // --- Reply Actions ---
+        function setReply(msgId, senderName, text) {
+            activeReplyTo = { id: msgId, senderName, text };
+            document.getElementById('reply-to-name').innerText = senderName;
+            document.getElementById('reply-to-text').innerText = text;
+            const banner = document.getElementById('reply-banner');
+            banner.classList.remove('hidden');
+            banner.classList.add('flex');
+            ui.chatInput.focus();
+        }
+
+        function cancelReply() {
+            activeReplyTo = null;
+            const banner = document.getElementById('reply-banner');
+            banner.classList.add('hidden');
+            banner.classList.remove('flex');
+        }
+
+        function scrollToMessage(id) {
+            const el = document.getElementById(`msg-wrap-${id}`);
+            if(el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                el.classList.add('bg-indigo-500/20');
+                el.classList.add('rounded-xl');
+                setTimeout(() => {
+                    el.classList.remove('bg-indigo-500/20');
+                    el.classList.remove('rounded-xl');
+                }, 1500);
+            }
+        }
+
+        // --- Emoji Reactions Actions ---
+        function toggleInlineEmoji(msgId) {
+            document.querySelectorAll('[id^="emoji-popup-"]').forEach(el => {
+                if(el.id !== `emoji-popup-${msgId}`) { el.classList.add('hidden'); el.classList.remove('flex'); }
+            });
+            const popup = document.getElementById(`emoji-popup-${msgId}`);
+            if(popup) {
+                popup.classList.toggle('hidden');
+                popup.classList.toggle('flex');
+            }
+        }
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.react-btn') && !e.target.closest('[id^="emoji-popup-"]')) {
+                document.querySelectorAll('[id^="emoji-popup-"]').forEach(el => {
+                    el.classList.add('hidden');
+                    el.classList.remove('flex');
+                });
+            }
+        });
+
+        function toggleReaction(msgId, emoji) {
+            handleIncomingReaction(msgId, emoji, localUserName);
+            
+            const popup = document.getElementById(`emoji-popup-${msgId}`);
+            if(popup) { popup.classList.add('hidden'); popup.classList.remove('flex'); }
+            
+            Object.values(peers).forEach(p => {
+                if (p.data && p.data.open) p.data.send({ type: 'reaction', messageId: msgId, emoji: emoji, senderName: localUserName });
+            });
+        }
+
+        function handleIncomingReaction(messageId, emoji, senderName) {
+            const msg = chatHistory.find(m => m.id === messageId);
+            if (msg) {
+                if (!msg.reactions) msg.reactions = {};
+                if (!msg.reactions[emoji]) msg.reactions[emoji] = [];
+                
+                if (!msg.reactions[emoji].includes(senderName)) {
+                    msg.reactions[emoji].push(senderName);
+                } else {
+                    msg.reactions[emoji] = msg.reactions[emoji].filter(n => n !== senderName);
+                    if (msg.reactions[emoji].length === 0) delete msg.reactions[emoji];
+                }
+                updateReactionsUI(messageId);
+            }
+        }
+
+        function updateReactionsUI(msgId) {
+            const msg = chatHistory.find(m => m.id === msgId);
+            const container = document.getElementById(`reactions-${msgId}`);
+            if (!msg || !container) return;
+
+            let html = '';
+            if (msg.reactions) {
+                for (const [emoji, users] of Object.entries(msg.reactions)) {
+                    if (users.length > 0) {
+                        const isMyReaction = users.includes(localUserName);
+                        html += `
+                            <button onclick="toggleReaction('${msgId}', '${emoji}')" class="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium border ${isMyReaction ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-300' : 'bg-[#293145] border-white/5 text-slate-300'} hover:bg-[#343d52] transition-colors shadow-sm">
+                                <span>${emoji}</span>
+                                <span class="opacity-80">${users.length}</span>
+                            </button>
+                        `;
+                    }
+                }
+            }
+            container.innerHTML = html;
+        }
+
+        // --- Sidebar & Chat Logic ---
         function sendChatMessage(e) {
             e.preventDefault();
             const text = ui.chatInput.value.trim();
             if (!text) return;
 
-            let sentToAnyone = false;
+            if (!isHost && meetingSettings.chat === 'host-only') return showToast(t('chat_disabled_msg'));
+            if (meetingSettings.chat === 'disabled') return showToast(t('chat_disabled_msg'));
 
+            const msgId = Date.now().toString(36) + Math.random().toString(36).substr(2);
+            const chatObj = {
+                id: msgId,
+                senderName: localUserName,
+                text: text,
+                replyTo: activeReplyTo,
+                reactions: {}
+            };
+
+            let sent = false;
             Object.values(peers).forEach(p => {
-                if (p.data && p.data.open) {
-                    p.data.send({ type: 'chat', text: text });
-                    sentToAnyone = true;
-                }
+                if (p.data && p.data.open) { p.data.send({ type: 'chat', chatObj: chatObj }); sent = true; }
             });
 
-            if (sentToAnyone) {
-                appendMessage(text, 'me', localUserName);
+            if (sent || Object.keys(peers).length > 0 || isHost) {
+                chatHistory.push(chatObj);
+                appendMessage(chatObj, 'me');
                 ui.chatInput.value = '';
-            } else {
-                showToast(t('wait_for_chat'));
-            }
+                cancelReply();
+            } else showToast(t('wait_for_chat'));
         }
 
-        function appendMessage(text, sender, senderName = '') {
+        function appendMessage(chatObj, sender) {
             const msgDiv = document.createElement('div');
+            const isMe = sender === 'me';
             
-            if (sender === 'system') {
-                msgDiv.className = 'text-center my-3';
-                msgDiv.innerHTML = `<span class="bg-white/10 text-slate-300 text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider px-3 py-1 rounded-full border border-white/5">${text}</span>`;
-            } else {
-                const isMe = sender === 'me';
-                msgDiv.className = `flex flex-col ${isMe ? 'items-end' : 'items-start'} mb-4 sm:mb-5 group`;
-                
-                const nameLabel = document.createElement('div');
-                nameLabel.className = 'text-[9px] sm:text-[10px] font-semibold text-slate-400 mb-1.5 px-1 uppercase tracking-wider';
-                nameLabel.innerText = isMe ? t('you_label') : senderName;
+            msgDiv.id = `msg-wrap-${chatObj.id}`;
+            msgDiv.className = `flex flex-col ${isMe ? 'items-end' : 'items-start'} mb-4 group w-full relative transition-all duration-300`;
+            
+            const nameLabel = document.createElement('div');
+            nameLabel.className = `text-[10px] font-bold text-slate-500 mb-1 px-1 uppercase tracking-wider ${isMe ? 'mr-1' : 'ml-1'}`;
+            nameLabel.innerText = isMe ? t('you_label') : chatObj.senderName;
 
-                const bubble = document.createElement('div');
-                bubble.className = `max-w-[90%] px-3.5 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm text-white shadow-lg ${isMe ? 'chat-bubble-me rounded-2xl rounded-tr-sm' : 'chat-bubble-them rounded-2xl rounded-tl-sm backdrop-blur-md'}`;
-                bubble.innerText = text;
-                
-                const time = document.createElement('div');
-                time.className = 'text-[8px] sm:text-[9px] font-medium text-slate-500 mt-1 sm:mt-1.5 px-1 opacity-0 group-hover:opacity-100 transition-opacity';
-                time.innerText = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-                msgDiv.appendChild(nameLabel);
-                msgDiv.appendChild(bubble);
-                msgDiv.appendChild(time);
+            // Reply Block (Now designed to sit INSIDE the main chat bubble)
+            let replyHtml = '';
+            if (chatObj.replyTo) {
+                replyHtml = `
+                    <div class="text-[10px] sm:text-[11px] bg-black/15 border-l-[3px] ${isMe ? 'border-white/50' : 'border-indigo-500'} px-2.5 py-1.5 mx-1.5 mt-1.5 mb-0.5 rounded-md cursor-pointer hover:bg-black/25 transition-colors text-left" onclick="scrollToMessage('${chatObj.replyTo.id}')">
+                        <span class="font-bold ${isMe ? 'text-white/90' : 'text-indigo-400'} block truncate">${escapeHtml(chatObj.replyTo.senderName)}</span>
+                        <span class="truncate block text-white/80">${escapeHtml(chatObj.replyTo.text)}</span>
+                    </div>
+                `;
             }
 
+            const safeName = escapeHtml(chatObj.senderName).replace(/'/g, "\\'").replace(/"/g, "&quot;");
+            const safeText = escapeHtml(chatObj.text).replace(/'/g, "\\'").replace(/"/g, "&quot;");
+
+            // Action Buttons (Reply / React)
+            const actionHtml = `
+                <div class="opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5 ${isMe ? 'mr-2' : 'ml-2'} bg-[#293145] sm:bg-[#293145]/90 rounded-lg p-1 shadow-md border border-white/5 relative z-10 shrink-0">
+                     <button onclick="setReply('${chatObj.id}', '${safeName}', '${safeText}')" class="p-1.5 hover:bg-[#343d52] rounded-md text-slate-400 hover:text-white transition-colors" title="Reply"><i class="fas fa-reply text-[11px]"></i></button>
+                     <button class="react-btn p-1.5 hover:bg-[#343d52] rounded-md text-slate-400 hover:text-white transition-colors" onclick="toggleInlineEmoji('${chatObj.id}')" title="React"><i class="fas fa-smile text-[11px]"></i></button>
+                     
+                     <div id="emoji-popup-${chatObj.id}" class="hidden absolute ${isMe ? 'right-full mr-2' : 'left-full ml-2'} top-0 bg-[#121825] border border-white/10 rounded-full shadow-xl p-1 gap-1 items-center z-50">
+                         ${['👍', '❤️', '😂', '😮', '😢', '🙏'].map(em => `<button onclick="toggleReaction('${chatObj.id}', '${em}')" class="hover:bg-[#293145] rounded-full w-7 h-7 flex items-center justify-center text-base transition-transform hover:scale-110">${em}</button>`).join('')}
+                     </div>
+                </div>
+            `;
+
+            // Message Bubble (Wraps both Reply and Text perfectly)
+            const contentHtml = `
+                <div class="flex items-end gap-1 ${isMe ? 'flex-row-reverse' : 'flex-row'} w-full">
+                    <div class="flex flex-col ${isMe ? 'bg-indigo-500 rounded-[18px] rounded-br-[4px]' : 'bg-[#293145] rounded-[18px] rounded-bl-[4px] border border-white/5'} shadow-sm max-w-[75%] sm:max-w-[85%] w-fit overflow-hidden">
+                        ${replyHtml}
+                        <div class="px-3.5 py-2 sm:px-4 sm:py-2.5 text-[13px] sm:text-sm text-white break-words whitespace-pre-wrap text-left leading-relaxed">${escapeHtml(chatObj.text)}</div>
+                    </div>
+                    ${actionHtml}
+                </div>
+            `;
+
+            // Reactions Container
+            const reactionsHtml = `<div id="reactions-${chatObj.id}" class="flex flex-wrap gap-1 mt-1.5 ${isMe ? 'justify-end mr-1' : 'justify-start ml-1'} w-full max-w-[75%] sm:max-w-[85%]"></div>`;
+
+            msgDiv.innerHTML = `
+                ${nameLabel.outerHTML}
+                ${contentHtml}
+                ${reactionsHtml}
+            `;
+
             ui.chatMessages.appendChild(msgDiv);
+            updateReactionsUI(chatObj.id); // Update reactions if replaying history
             ui.chatMessages.scrollTop = ui.chatMessages.scrollHeight;
         }
 
-        // --- UI Controls ---
-
         function toggleSidebar(panel) {
-            if (activeSidebar === panel) {
-                closeSidebar();
-                return;
-            }
-
+            if (activeSidebar === panel) return closeSidebar();
             ui.sidebar.classList.remove('translate-x-full');
             ui.videoArea.classList.add('sm:pr-[380px]');
-            
             activeSidebar = panel;
+
+            ui.chatContent.classList.add('hidden');
+            ui.participantsContent.classList.add('hidden');
+            ui.settingsContent.classList.add('hidden');
 
             if (panel === 'chat') {
                 ui.sidebarTitle.innerText = t('chat_title');
                 ui.chatContent.classList.remove('hidden');
-                ui.participantsContent.classList.add('hidden');
-                
-                unreadMessages = 0;
-                ui.chatBadge.classList.add('hidden');
-                
+                unreadMessages = 0; ui.chatBadge.classList.add('hidden');
                 ui.chatMessages.scrollTop = ui.chatMessages.scrollHeight;
-                setTimeout(() => ui.chatInput.focus(), 300);
             } else if (panel === 'participants') {
-                const totalCount = Object.keys(peers).length + 1;
-                ui.sidebarTitle.innerText = `${t('in_call')} (${totalCount})`;
+                const count = Object.keys(peers).length + 1;
+                ui.sidebarTitle.innerText = `${t('in_call')} (${count})`;
                 ui.participantsContent.classList.remove('hidden');
-                ui.chatContent.classList.add('hidden');
+                if (isHost) renderWaitingRoom();
+            } else if (panel === 'settings' && isHost) {
+                ui.sidebarTitle.innerText = t('host_controls');
+                ui.settingsContent.classList.remove('hidden');
+                ui.settingsContent.classList.add('flex');
             }
         }
 
         function closeSidebar() {
             ui.sidebar.classList.add('translate-x-full');
             ui.videoArea.classList.remove('sm:pr-[380px]');
-            
-            setTimeout(() => {
-                ui.chatContent.classList.add('hidden');
-                ui.participantsContent.classList.add('hidden');
-            }, 500);
+            setTimeout(() => { 
+                ui.chatContent.classList.add('hidden'); 
+                ui.participantsContent.classList.add('hidden'); 
+                ui.settingsContent.classList.add('hidden');
+                ui.settingsContent.classList.remove('flex');
+            }, 300);
             activeSidebar = null;
         }
 
+        // --- HOST CONTROLS IMPLEMENTATION ---
+        function broadcastHostCommand(command, payload = {}) {
+            Object.values(peers).forEach(p => {
+                if (p.data && p.data.open) p.data.send({ type: 'host-command', command, payload });
+            });
+        }
+        function sendHostCommand(targetId, command, payload = {}) {
+            const p = peers[targetId];
+            if (p && p.data && p.data.open) p.data.send({ type: 'host-command', command, payload });
+        }
+
+        // New Smart Host Functions
+        function muteAll() {
+            broadcastHostCommand('force-mute');
+            showToast("Muted all participants");
+        }
+
+        function lowerAllHands() {
+            broadcastHostCommand('force-lower-hand');
+            raisedHands.clear();
+            updateParticipantsList();
+            showToast("Lowered all hands");
+        }
+
+        function endMeetingForAll() {
+            broadcastHostCommand('end-meeting');
+            showToast("Ending meeting for everyone...");
+            setTimeout(() => { endCall(); }, 800); // Wait a brief moment to let command reach peers
+        }
+
+        function handleHostCommand(command, payload) {
+            if (command === 'force-mute') {
+                if (!isMicMuted) toggleMic();
+                showToast("Host muted your microphone");
+            } 
+            else if (command === 'force-video-off') {
+                if (!isCamOff) toggleVideo();
+                showToast("Host turned off your video");
+            }
+            else if (command === 'force-lower-hand') {
+                if (myHandRaised) toggleRaiseHand();
+            }
+            else if (command === 'kick') {
+                showToast("You were removed by the host");
+                endCall();
+            }
+            else if (command === 'end-meeting') {
+                showToast(t('meeting_ended_by_host'));
+                endCall();
+            }
+            else if (command === 'update-settings') {
+                meetingSettings = payload.settings;
+                applyMeetingSettings();
+            }
+        }
+
+        function applyMeetingSettings() {
+            // Screen Share Toggle Logic
+            if (!meetingSettings.screenShare && !isHost) {
+                if (isScreenSharing) stopScreenShare();
+                ui.btnScreen.classList.add('hidden');
+            } else {
+                ui.btnScreen.classList.remove('hidden');
+            }
+
+            // Chat Restrict Logic
+            const canChat = isHost || (meetingSettings.chat === 'all') || (meetingSettings.chat === 'host-only' && isHost);
+            if (!canChat) {
+                ui.chatInput.disabled = true;
+                ui.chatInput.placeholder = t('chat_disabled_msg');
+                ui.chatSubmit.disabled = true;
+            } else {
+                ui.chatInput.disabled = false;
+                ui.chatInput.placeholder = t('chat_placeholder');
+                ui.chatSubmit.disabled = false;
+            }
+        }
+
+        function updateHostSettings(key, value) {
+            if (!isHost) return;
+            meetingSettings[key] = value;
+            applyMeetingSettings();
+            broadcastHostCommand('update-settings', { settings: meetingSettings });
+            if (key === 'locked' && value) showToast("Meeting locked. New joins need approval.");
+            if (key === 'waitingRoom' && value) showToast("Waiting room enabled.");
+        }
+
+        function renderWaitingRoom() {
+            if (!isHost) return;
+            const wqKeys = Object.keys(waitingQueue);
+            const wqSection = document.getElementById('waiting-room-section');
+            const wqList = document.getElementById('waiting-list');
+            document.getElementById('waiting-count').innerText = wqKeys.length;
+
+            if (wqKeys.length === 0) {
+                wqSection.classList.add('hidden');
+                wqSection.classList.remove('flex');
+                return;
+            }
+            wqSection.classList.remove('hidden');
+            wqSection.classList.add('flex');
+            
+            let html = '';
+            wqKeys.forEach(pid => {
+                const p = waitingQueue[pid];
+                html += `
+                <div class="flex items-center justify-between p-2 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
+                    <span class="text-white font-medium text-sm truncate pl-2">${p.name}</span>
+                    <div class="flex gap-2">
+                        <button onclick="denyGuest('${pid}')" class="text-rose-400 hover:text-rose-300 px-2 py-1 text-xs font-bold transition-colors">${t('deny')}</button>
+                        <button onclick="approveGuest('${pid}', '${p.name}')" class="bg-indigo-500 hover:bg-indigo-600 text-white px-3 py-1 rounded-md text-xs font-bold transition-colors">${t('admit')}</button>
+                    </div>
+                </div>`;
+            });
+            wqList.innerHTML = html;
+        }
+
+        function approveGuest(peerId, name, existingConn = null) {
+            const user = waitingQueue[peerId];
+            const conn = existingConn || (user ? user.conn : null);
+            if (conn) {
+                conn.send({ type: 'join-response', status: 'approved', settings: meetingSettings });
+                peers[peerId] = { name: name, data: conn };
+                setupDataConnEvents(conn);
+                
+                // Send mesh list to newly approved user
+                const existingPeers = Object.keys(peers).filter(p => p !== peerId);
+                if (existingPeers.length > 0) conn.send({ type: 'peer-list', list: existingPeers });
+            }
+            if (waitingQueue[peerId]) {
+                delete waitingQueue[peerId];
+                renderWaitingRoom();
+                updateParticipantsList();
+            }
+        }
+
+        function denyGuest(peerId) {
+            const user = waitingQueue[peerId];
+            if (user && user.conn) {
+                user.conn.send({ type: 'join-response', status: 'rejected', reason: 'denied' });
+                setTimeout(() => user.conn.close(), 500);
+            }
+            delete waitingQueue[peerId];
+            renderWaitingRoom();
+        }
+
         function updateParticipantsList() {
-            const isHost = (peer && peer.id === activeRoomId);
             const totalCount = Object.keys(peers).length + 1;
             
+            // Render Myself
             let html = `
-                <div class="flex items-center justify-between p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-white/10 border border-white/10 shadow-sm backdrop-blur-md transition-all hover:bg-white/15">
-                    <div class="flex items-center gap-3 sm:gap-4 truncate">
-                        <div class="w-10 h-10 sm:w-12 sm:h-12 shrink-0 rounded-lg sm:rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 text-white flex items-center justify-center font-bold text-base sm:text-lg shadow-inner">
+                <div class="flex items-center justify-between p-2.5 sm:p-3 rounded-lg sm:rounded-xl bg-gray-800 border border-white/5 shadow-sm">
+                    <div class="flex items-center gap-2.5 sm:gap-3">
+                        <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-md sm:rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-sm sm:text-base relative">
                             ${localUserName ? localUserName.charAt(0).toUpperCase() : 'U'}
+                            ${myHandRaised ? '<div class="absolute -top-1 -right-1 bg-yellow-500 rounded-full w-3 h-3 border border-gray-800"></div>' : ''}
                         </div>
-                        <div class="flex flex-col truncate">
-                            <span class="text-white font-semibold text-xs sm:text-sm truncate">${localUserName} (${t('you_label')})</span>
-                            <span class="text-indigo-300 text-[9px] sm:text-[10px] uppercase tracking-wider font-bold">${isHost ? t('meeting_host') : t('participant')}</span>
+                        <div class="flex flex-col">
+                            <span class="text-white font-bold text-[13px] sm:text-sm flex items-center gap-2">
+                                ${localUserName} (${t('you_label')}) 
+                                ${myHandRaised ? '<i class="fas fa-hand-paper text-yellow-400 text-[10px]"></i>' : ''}
+                            </span>
+                            <span class="text-indigo-400 text-[9px] sm:text-[10px] uppercase tracking-wider font-bold">${isHost ? t('meeting_host') : t('participant')}</span>
                         </div>
-                    </div>
-                    <div class="flex gap-1.5 sm:gap-2 text-slate-400 text-[10px] sm:text-xs bg-black/20 p-1.5 sm:p-2 rounded-lg sm:rounded-xl border border-white/5 shrink-0">
-                        <i class="fas ${isMicMuted ? 'fa-microphone-slash text-rose-400' : 'fa-microphone text-emerald-400'} w-3 sm:w-4 text-center"></i>
-                        <i class="fas ${isCamOff ? 'fa-video-slash text-rose-400' : 'fa-video text-emerald-400'} w-3 sm:w-4 text-center"></i>
                     </div>
                 </div>
             `;
 
+            // Render Peers
             Object.keys(peers).forEach(pid => {
-                const p = peers[pid];
-                const pName = p.name || t('connecting');
+                const pName = peers[pid].name || t('connecting');
                 const isPeerHost = (pid === activeRoomId);
+                const hasHand = raisedHands.has(pid);
                 
+                // Host Controls for this peer
+                let hostControlsHtml = '';
+                if (isHost && !isPeerHost) {
+                    hostControlsHtml = `
+                    <div class="flex items-center gap-1.5 opacity-60 hover:opacity-100 transition-opacity">
+                        <button onclick="sendHostCommand('${pid}', 'force-mute')" title="Mute Mic" class="w-6 h-6 rounded bg-gray-700 hover:bg-gray-600 text-slate-300 flex items-center justify-center"><i class="fas fa-microphone-slash text-[10px]"></i></button>
+                        <button onclick="sendHostCommand('${pid}', 'force-video-off')" title="Stop Video" class="w-6 h-6 rounded bg-gray-700 hover:bg-gray-600 text-slate-300 flex items-center justify-center"><i class="fas fa-video-slash text-[10px]"></i></button>
+                        <button onclick="sendHostCommand('${pid}', 'kick')" title="Remove" class="w-6 h-6 rounded bg-rose-500/20 hover:bg-rose-500 text-rose-400 hover:text-white flex items-center justify-center transition-colors"><i class="fas fa-sign-out-alt text-[10px]"></i></button>
+                    </div>`;
+                }
+
                 html += `
-                    <div class="flex items-center justify-between p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-white/5 border border-white/5 mt-2 sm:mt-3 hover:bg-white/10 transition-colors">
-                        <div class="flex items-center gap-3 sm:gap-4 truncate">
-                            <div class="w-10 h-10 sm:w-12 sm:h-12 shrink-0 rounded-lg sm:rounded-xl bg-slate-800 text-slate-300 flex items-center justify-center font-bold text-base sm:text-lg border border-white/10">
+                    <div class="flex items-center justify-between p-2.5 sm:p-3 rounded-lg sm:rounded-xl bg-gray-800/50 border border-transparent hover:border-white/5 group">
+                        <div class="flex items-center gap-2.5 sm:gap-3">
+                            <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-md sm:rounded-lg bg-gray-700 text-slate-300 flex items-center justify-center font-bold text-sm sm:text-base relative">
                                 ${pName.charAt(0).toUpperCase()}
+                                ${hasHand ? '<div class="absolute -top-1 -right-1 bg-yellow-500 rounded-full w-3 h-3 border border-gray-800"></div>' : ''}
                             </div>
-                            <div class="flex flex-col truncate pr-2">
-                                <span class="text-white font-semibold text-xs sm:text-sm truncate">${pName}</span>
-                                <span class="text-slate-400 text-[9px] sm:text-[10px] uppercase tracking-wider font-bold">${isPeerHost ? t('meeting_host') : t('participant')}</span>
+                            <div class="flex flex-col max-w-[120px]">
+                                <span class="text-white font-bold text-[13px] sm:text-sm truncate flex items-center gap-2">
+                                    ${pName}
+                                    ${hasHand ? '<i class="fas fa-hand-paper text-yellow-400 text-[10px]"></i>' : ''}
+                                </span>
+                                <span class="text-slate-500 text-[9px] sm:text-[10px] uppercase tracking-wider font-bold">${isPeerHost ? t('meeting_host') : t('participant')}</span>
                             </div>
                         </div>
-                        <div class="flex gap-1.5 sm:gap-2 text-emerald-400 text-[10px] sm:text-xs bg-emerald-500/10 p-1.5 sm:p-2 rounded-lg sm:rounded-xl border border-emerald-500/20 shrink-0">
-                            <i class="fas fa-signal" title="Connected"></i>
-                        </div>
+                        ${hostControlsHtml}
                     </div>
                 `;
             });
 
             ui.participantsList.innerHTML = html;
-            
             ui.participantsBadge.innerText = totalCount;
-            if (totalCount > 1) {
-                ui.participantsBadge.classList.remove('hidden');
-            } else {
-                ui.participantsBadge.classList.add('hidden');
-            }
-
-            if (activeSidebar === 'participants') {
-                ui.sidebarTitle.innerText = `${t('in_call')} (${totalCount})`;
-            }
+            if (totalCount > 1) ui.participantsBadge.classList.remove('hidden'); else ui.participantsBadge.classList.add('hidden');
+            if (activeSidebar === 'participants') ui.sidebarTitle.innerText = `${t('in_call')} (${totalCount})`;
         }
 
-        function updateMicUI() {
-            const icon = ui.btnMic.querySelector('i');
-            if (isMicMuted) {
-                icon.className = 'fas fa-microphone-slash text-sm sm:text-xl group-hover:-translate-y-0.5 transition-transform relative z-10';
-                ui.btnMic.classList.replace('bg-white/10', 'bg-rose-500/20');
-                ui.btnMic.classList.replace('hover:bg-white/20', 'hover:bg-rose-500/30');
-                ui.btnMic.classList.add('text-rose-400');
-                ui.btnMic.classList.remove('text-white');
-                ui.localMicIndicator.classList.remove('hidden');
-            } else {
-                icon.className = 'fas fa-microphone text-sm sm:text-xl group-hover:-translate-y-0.5 transition-transform relative z-10';
-                ui.btnMic.classList.replace('bg-rose-500/20', 'bg-white/10');
-                ui.btnMic.classList.replace('hover:bg-rose-500/30', 'hover:bg-white/20');
-                ui.btnMic.classList.remove('text-rose-400');
-                ui.btnMic.classList.add('text-white');
-                ui.localMicIndicator.classList.add('hidden');
-            }
-            updateParticipantsList();
-        }
-
-        function updateVideoUI() {
-            const icon = ui.btnVideo.querySelector('i');
-            if (isCamOff) {
-                icon.className = 'fas fa-video-slash text-sm sm:text-xl group-hover:-translate-y-0.5 transition-transform relative z-10';
-                ui.btnVideo.classList.replace('bg-white/10', 'bg-rose-500/20');
-                ui.btnVideo.classList.replace('hover:bg-white/20', 'hover:bg-rose-500/30');
-                ui.btnVideo.classList.add('text-rose-400');
-                ui.btnVideo.classList.remove('text-white');
-            } else {
-                icon.className = 'fas fa-video text-sm sm:text-xl group-hover:-translate-y-0.5 transition-transform relative z-10';
-                ui.btnVideo.classList.replace('bg-rose-500/20', 'bg-white/10');
-                ui.btnVideo.classList.replace('hover:bg-rose-500/30', 'hover:bg-white/20');
-                ui.btnVideo.classList.remove('text-rose-400');
-                ui.btnVideo.classList.add('text-white');
-            }
-            updateParticipantsList();
-        }
-
-        function toggleMic() {
-            if (!localStream) return;
-            if (isDummyStream) { showToast(t('no_mic')); return; }
-            
-            const audioTracks = localStream.getAudioTracks();
-            if (audioTracks.length > 0) {
-                isMicMuted = !isMicMuted;
-                audioTracks[0].enabled = !isMicMuted;
-                updateMicUI();
-            } else {
-                showToast(t('mic_not_found'));
-            }
-        }
-
-        function toggleVideo() {
-            if (!localStream) return;
-            if (isDummyStream) { showToast(t('no_cam')); return; }
-            
-            const videoTracks = localStream.getVideoTracks();
-            if (videoTracks.length > 0) {
-                isCamOff = !isCamOff;
-                videoTracks[0].enabled = !isCamOff;
-                updateVideoUI();
-            } else {
-                showToast(t('cam_not_found'));
-            }
-        }
-
+        // --- Core Lifecycle ---
         function endCall() {
             if (isScreenSharing) stopScreenShare();
-
-            Object.values(peers).forEach(p => {
-                if (p.data && p.data.open) {
-                    p.data.send({ type: 'leaving' });
-                }
-            });
-
-            Object.keys(peers).forEach(pid => {
-                if (peers[pid].call) peers[pid].call.close();
-                if (peers[pid].data) peers[pid].data.close();
-                removePeer(pid);
-            });
+            Object.values(peers).forEach(p => { if (p.data && p.data.open) p.data.send({ type: 'leaving' }); });
+            Object.keys(peers).forEach(pid => removePeer(pid));
             
-            if (peer) {
-                peer.destroy();
-                peer = null;
-            }
-            
+            if (peer) { peer.destroy(); peer = null; }
             closeSidebar();
             
+            ui.chatInput.disabled = true; ui.chatSubmit.disabled = true;
+            document.getElementById('join-id-input').value = '';
+            ui.lobbyOverlay.classList.add('hidden');
+            ui.lobbyOverlay.classList.remove('flex');
+            myHandRaised = false; raisedHands.clear();
+            chatHistory = []; // Reset chat history on leave
+            activeReplyTo = null;
+            cancelReply();
+
             ui.chatMessages.innerHTML = `
-                <div class="text-center bg-white/5 rounded-2xl py-3 px-4 mx-auto border border-white/5">
-                    <i class="fas fa-lock text-indigo-400 mb-2 text-base sm:text-lg"></i>
-                    <p class="text-[10px] sm:text-[11px] text-slate-400 font-medium leading-relaxed" data-i18n="secure_chat_welcome">${t('secure_chat_welcome')}</p>
+                <div class="text-center bg-indigo-500/10 rounded-2xl py-3 px-4 mx-auto border border-indigo-500/20 max-w-[250px] mt-4">
+                    <i class="fas fa-lock text-indigo-400 text-sm mb-2"></i>
+                    <p class="text-[10px] sm:text-[11px] text-indigo-200 font-medium leading-relaxed" data-i18n="secure_chat_welcome">Messages are end-to-end encrypted.</p>
                 </div>
             `;
-            ui.chatInput.disabled = true;
-            ui.chatSubmit.disabled = true;
             
-            try {
-                if (window.location.protocol !== 'blob:') {
-                    window.history.replaceState({}, document.title, window.location.pathname);
-                }
-            } catch (e) {
-                console.warn("Sandbox er karone URL history update kora jayni.", e);
-            }
+            try { if (window.location.protocol !== 'blob:') window.history.replaceState({}, document.title, window.location.pathname); } catch (e) {}
             
-            document.getElementById('join-id-input').value = '';
             switchScreen('setup');
             showToast(t('left_meeting'));
         }
 
-        // --- Utility Functions ---
-
-        function switchScreen(screenName) {
-            if (screenName === 'call') {
-                screens.setup.classList.add('hidden');
-                screens.setup.classList.remove('flex');
-                screens.call.classList.remove('hidden');
-                screens.call.classList.add('flex');
+        function switchScreen(screen) {
+            if (screen === 'call') {
+                screens.setup.classList.add('hidden'); screens.setup.classList.remove('flex');
+                screens.call.classList.remove('hidden'); screens.call.classList.add('flex');
             } else {
-                screens.call.classList.add('hidden');
-                screens.call.classList.remove('flex');
-                screens.setup.classList.remove('hidden');
-                screens.setup.classList.add('flex');
+                screens.call.classList.add('hidden'); screens.call.classList.remove('flex');
+                screens.setup.classList.remove('hidden'); screens.setup.classList.add('flex');
                 ui.waitingMessage.classList.add('hidden');
             }
         }
 
         function getRoomLink(id) {
             try {
-                if (window.location.protocol === 'blob:') {
-                    return id; 
-                }
-                const url = new URL(window.location.href);
-                url.searchParams.set('room', id);
-                return url.toString();
-            } catch (e) {
-                return id;
-            }
+                if (window.location.protocol === 'blob:') return id; 
+                const url = new URL(window.location.href); url.searchParams.set('room', id); return url.toString();
+            } catch (e) { return id; }
         }
 
         function copyRoomLink() {
-            const linkToCopy = activeRoomId ? getRoomLink(activeRoomId) : document.getElementById('waiting-room-id').innerText;
-            if (!linkToCopy) return;
-            
-            const tempInput = document.createElement("input");
-            tempInput.value = linkToCopy;
-            document.body.appendChild(tempInput);
-            tempInput.select();
-            
-            try {
-                document.execCommand("copy");
-                showToast(t('link_copied'));
-            } catch (err) {
-                showToast(t('link_copy_failed'));
-            }
-            
+            const link = activeRoomId ? getRoomLink(activeRoomId) : document.getElementById('waiting-room-id').innerText;
+            if (!link) return;
+            const tempInput = document.createElement("input"); tempInput.value = link; document.body.appendChild(tempInput); tempInput.select();
+            try { document.execCommand("copy"); showToast(t('link_copied')); } catch (err) { showToast(t('link_copy_failed')); }
             document.body.removeChild(tempInput);
         }
 
         let toastTimeout;
-        function showToast(message) {
+        function showToast(msg) {
             const toast = document.getElementById('toast');
-            document.getElementById('toast-message').innerText = message;
-            
-            toast.classList.remove('opacity-0', 'translate-y-[-20px]');
-            toast.classList.add('opacity-100', 'translate-y-0');
-            
+            document.getElementById('toast-message').innerText = msg;
+            toast.classList.remove('opacity-0', 'translate-y-[-20px]'); toast.classList.add('opacity-100', 'translate-y-0');
             clearTimeout(toastTimeout);
-            toastTimeout = setTimeout(() => {
-                toast.classList.remove('opacity-100', 'translate-y-0');
-                toast.classList.add('opacity-0', 'translate-y-[-20px]');
-            }, 3000);
+            toastTimeout = setTimeout(() => { toast.classList.remove('opacity-100', 'translate-y-0'); toast.classList.add('opacity-0', 'translate-y-[-20px]'); }, 3000);
         }
-
     </script>
 </body>
 </html>
