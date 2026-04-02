@@ -722,19 +722,46 @@
         }
 
         function createDummyStream() {
-            const canvas = document.createElement('canvas');
-            canvas.width = 640; canvas.height = 480;
-            const ctx = canvas.getContext('2d');
-            setInterval(() => {
-                ctx.fillStyle = '#0f172a'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-                ctx.translate(canvas.width / 2, canvas.height / 2); ctx.scale(-1, 1);
-                ctx.fillStyle = '#475569'; ctx.font = '600 24px "Plus Jakarta Sans"';
-                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                ctx.fillText(t('camera_off'), 0, 0);
-                ctx.restore();
-            }, 100); 
-            const videoStream = canvas.captureStream(10);
-            return new MediaStream([videoStream.getVideoTracks()[0]]);
+            const stream = new MediaStream();
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width = 640; canvas.height = 480;
+                const ctx = canvas.getContext('2d');
+                setInterval(() => {
+                    ctx.save();
+                    ctx.fillStyle = '#0f172a'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.translate(canvas.width / 2, canvas.height / 2); ctx.scale(-1, 1);
+                    ctx.fillStyle = '#475569'; ctx.font = '600 24px "Plus Jakarta Sans"';
+                    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                    ctx.fillText(typeof t === 'function' ? t('camera_off') : 'Camera Off', 0, 0);
+                    ctx.restore();
+                }, 100); 
+                
+                if (canvas.captureStream) {
+                    const videoStream = canvas.captureStream(10);
+                    const vTracks = videoStream.getVideoTracks();
+                    if (vTracks.length > 0) stream.addTrack(vTracks[0]);
+                }
+                
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (AudioContext) {
+                    try {
+                        const audioCtx = new AudioContext();
+                        const destination = audioCtx.createMediaStreamDestination();
+                        const aTracks = destination.stream.getAudioTracks();
+                        if (aTracks.length > 0) {
+                            const track = aTracks[0];
+                            track.enabled = false;
+                            stream.addTrack(track);
+                        }
+                    } catch(audioErr) {
+                        console.warn("Could not create dummy audio track:", audioErr.message);
+                    }
+                }
+            } catch (e) {
+                console.warn("Dummy stream creation failed:", e.message);
+            }
+            return stream;
         }
 
         async function initializeMedia() {
@@ -743,24 +770,32 @@
 
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
                 showToast(t('no_cam'));
+                localStream = createDummyStream();
                 setupDummyStreamFallback();
-            } else {
+                return;
+            }
+
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({
+                    audio: true,
+                    video: true
+                });
+            } catch (err) {
+                console.warn("Full media request failed:", err.message);
                 try {
-                    localStream = await navigator.mediaDevices.getUserMedia({
-                        audio: { echoCancellation: true, noiseSuppression: true },
-                        video: { width: { max: 640, ideal: 480 }, height: { max: 480, ideal: 360 } }
-                    });
-                } catch (err) {
+                    localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    isCamOff = true; updateVideoUI();
+                    showToast(t('no_cam') || "No camera detected");
+                } catch (err2) {
+                    console.warn("Audio only failed:", err2.message);
                     try {
-                        localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+                        localStream = await navigator.mediaDevices.getUserMedia({ video: true });
                         isMicMuted = true; updateMicUI();
-                    } catch (err2) {
-                        try {
-                            localStream = await navigator.mediaDevices.getUserMedia({ video: false, audio: true });
-                            isCamOff = true; updateVideoUI();
-                        } catch (err3) {
-                            setupDummyStreamFallback();
-                        }
+                        showToast(t('no_mic') || "No microphone detected");
+                    } catch (err3) {
+                        console.warn("All media requests failed:", err3.message);
+                        localStream = createDummyStream();
+                        setupDummyStreamFallback();
                     }
                 }
             }
@@ -774,9 +809,9 @@
         }
 
         function setupDummyStreamFallback() {
-            localStream = createDummyStream();
             isDummyStream = true; isCamOff = true; isMicMuted = true;
             updateVideoUI(); updateMicUI();
+            ui.previewOverlay.classList.remove('hidden', 'opacity-0');
             ui.previewOverlay.innerHTML = `<i class="fas fa-video-slash text-2xl text-slate-500 mb-2"></i><span class="text-xs font-bold uppercase text-slate-400">${t('camera_unavailable')}</span>`;
         }
 
@@ -1075,11 +1110,11 @@
 
             const video = document.createElement('video');
             video.srcObject = stream;
-            video.autoplay = true; video.playsInline = true; video.muted = false;
-            video.className = 'w-full h-full object-cover mirror-video transition-transform duration-700 group-hover:scale-105';
+            video.autoplay = true; video.playsInline = true; video.muted = false; video.volume = 1;
+            video.className = 'w-full h-full object-cover transition-transform duration-700 group-hover:scale-105';
             
             video.onloadedmetadata = () => {
-                video.play().catch(e => console.warn(e));
+                video.play().catch(e => console.warn('Auto-play prevented', e));
                 container.classList.remove('opacity-0', 'scale-95');
                 container.classList.add('opacity-100', 'scale-100');
             };
