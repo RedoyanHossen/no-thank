@@ -840,11 +840,15 @@
             updateClock();
         });
 
+        // Configured with robust TURN servers to bypass Mobile strict NATs
         function initPeer(id = null) {
             const configObj = {
                 'iceServers': [
                     { urls: 'stun:stun.l.google.com:19302' }, 
-                    { urls: 'stun:global.stun.twilio.com:3478' }
+                    { urls: 'stun:global.stun.twilio.com:3478' },
+                    { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+                    { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+                    { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' }
                 ]
             };
             return id ? new Peer(id, { config: configObj }) : new Peer({ config: configObj });
@@ -901,105 +905,90 @@
             peer = initPeer();
             peer.on('open', () => {
                 setupPeerListeners();
-                setTimeout(() => {
-                    startJoinHandshake(inputId); 
-                }, 1000);
+                startJoinHandshake(inputId); 
             });
             handlePeerErrors();
         }
 
         // --- NEW: Handshake Protocol (Waiting Room logic) ---
+        // Enhanced with Smart Retries for Mobile NATs
         function startJoinHandshake(hostId) {
             ui.lobbyOverlay.classList.remove('hidden');
             ui.lobbyOverlay.classList.add('flex');
+            ui.lobbyTitle.innerText = t('connecting');
+            ui.lobbyDesc.innerText = "Establishing secure connection...";
             
-            let handshakeTimeout = setTimeout(() => {
-                showToast(t('connection_failed'));
-                endCall();
-            }, 25000); // 25 seconds timeout for mobile networks
-            
-            // Connect specifying this is an initial join request
-            const conn = peer.connect(hostId, { metadata: { name: localUserName, type: 'join-request' } });
-            
-            if (!conn) {
-                clearTimeout(handshakeTimeout);
-                showToast(t('connection_failed'));
-                endCall();
-                return;
-            }
+            let connected = false;
+            let attempts = 0;
+            const maxAttempts = 3;
+            let handshakeInterval;
 
-            let retryInterval;
-
-            conn.on('open', () => {
-                conn.send({ type: 'join-request', name: localUserName });
+            const attemptConnection = () => {
+                if (connected) return;
+                attempts++;
                 
-                // Retry mechanism to combat packet loss on mobile
-                let retryCount = 0;
-                retryInterval = setInterval(() => {
-                    retryCount++;
-                    if (retryCount >= 10 || ui.lobbyOverlay.classList.contains('hidden')) {
-                        clearInterval(retryInterval);
-                    } else if (conn.open) {
-                        conn.send({ type: 'join-request', name: localUserName });
-                    }
-                }, 2000);
-            });
-            
-            conn.on('error', (err) => {
-                console.warn("Connection error during handshake:", err);
-                clearTimeout(handshakeTimeout);
-                if (retryInterval) clearInterval(retryInterval);
-                showToast(t('connection_failed'));
-                endCall();
-            });
-
-            conn.on('data', data => {
-                if (data.type === 'join-response') {
-                    clearTimeout(handshakeTimeout); 
-                    if (retryInterval) clearInterval(retryInterval); 
-                    
-                    if (data.status === 'approved') {
-                        meetingSettings = data.settings;
-                        applyMeetingSettings();
-                        
-                        if (meetingSettings.muteOnEntry) {
-                            if (!isMicMuted) toggleMic();
-                            showToast(t('muted_by_host_entry'));
-                        }
-
-                        ui.lobbyOverlay.classList.add('hidden');
-                        ui.lobbyOverlay.classList.remove('flex');
-                        
-                        // Prevent duplicate media calls if response was duplicated
-                        if (!peers[hostId] || !peers[hostId].call) {
-                            peers[hostId] = peers[hostId] || { name: t('meeting_host') };
-                            peers[hostId].data = conn;
-                            setupDataConnEvents(conn);
-                            
-                            const call = peer.call(hostId, localStream, { metadata: { name: localUserName } });
-                            peers[hostId].call = call;
-                            setupMediaCallEvents(call);
-                        }
-                    } else if (data.status === 'pending') {
-                        if (data.reason === 'locked') {
-                            ui.lobbyTitle.innerText = t('locked_lobby_title');
-                            ui.lobbyDesc.innerText = t('locked_lobby_desc');
-                        } else {
-                            ui.lobbyTitle.innerText = "In Lobby";
-                            ui.lobbyDesc.innerText = t('waiting_for_host');
-                        }
-                    } else if (data.status === 'rejected') {
-                        showToast(t(data.reason === 'locked' ? 'meeting_locked' : 'removed_by_host'));
-                        endCall();
-                    }
-                }
-            });
-
-            conn.on('close', () => {
-                if (!peers[hostId]) { // If closed before full approval
+                if (attempts > maxAttempts) {
+                    showToast(t('connection_failed'));
                     endCall();
+                    return;
                 }
-            });
+                
+                ui.lobbyDesc.innerText = `Connecting to host (Attempt ${attempts}/${maxAttempts})...`;
+                
+                const conn = peer.connect(hostId, { metadata: { name: localUserName, type: 'join-request' }, reliable: true });
+                if (!conn) return;
+
+                conn.on('open', () => {
+                    conn.send({ type: 'join-request', name: localUserName });
+                });
+
+                conn.on('data', data => {
+                    if (data.type === 'join-response') {
+                        connected = true;
+                        clearInterval(handshakeInterval);
+                        
+                        if (data.status === 'approved') {
+                            meetingSettings = data.settings;
+                            applyMeetingSettings();
+                            
+                            if (meetingSettings.muteOnEntry) {
+                                if (!isMicMuted) toggleMic();
+                                showToast(t('muted_by_host_entry'));
+                            }
+
+                            ui.lobbyOverlay.classList.add('hidden');
+                            ui.lobbyOverlay.classList.remove('flex');
+                            
+                            if (!peers[hostId] || !peers[hostId].call) {
+                                peers[hostId] = { name: t('meeting_host'), data: conn };
+                                setupDataConnEvents(conn);
+                                
+                                const call = peer.call(hostId, localStream, { metadata: { name: localUserName } });
+                                peers[hostId].call = call;
+                                setupMediaCallEvents(call);
+                            }
+                        } else if (data.status === 'pending') {
+                            if (data.reason === 'locked') {
+                                ui.lobbyTitle.innerText = t('locked_lobby_title');
+                                ui.lobbyDesc.innerText = t('locked_lobby_desc');
+                            } else {
+                                ui.lobbyTitle.innerText = "In Lobby";
+                                ui.lobbyDesc.innerText = t('waiting_for_host');
+                            }
+                        } else if (data.status === 'rejected') {
+                            showToast(t(data.reason === 'locked' ? 'meeting_locked' : 'removed_by_host'));
+                            endCall();
+                        }
+                    }
+                });
+
+                conn.on('close', () => {
+                    if (!connected && !peers[hostId]) endCall();
+                });
+            };
+
+            attemptConnection();
+            handshakeInterval = setInterval(attemptConnection, 8000); // Retry every 8 seconds if connection hangs
         }
 
         function setupPeerListeners() {
@@ -1019,8 +1008,8 @@
                     // Host intercepts join request
                     conn.on('data', data => {
                         if (data.type === 'join-request') {
-                            // If already approved (handling retries from guest)
-                            if (peers[conn.peer] && peers[conn.peer].data) {
+                            // Prevent duplicate responses if guest retries
+                            if (peers[conn.peer] && peers[conn.peer].data && peers[conn.peer].data.open) {
                                 conn.send({ type: 'join-response', status: 'approved', settings: meetingSettings });
                                 return;
                             }
@@ -1161,13 +1150,11 @@
                 if (err.type === 'peer-unavailable') {
                     let failedId = err.message && err.message.includes('connect to peer') ? err.message.split('peer ')[1] : null;
                     if (failedId) removePeer(failedId);
-                    if (Object.keys(peers).length === 0 && activeRoomId && peer.id !== activeRoomId) {
-                        if (ui.lobbyOverlay.classList.contains('flex')) {
-                            // Trying to connect to host and it failed
-                            showToast(t('meeting_not_found')); endCall();
-                        } else {
-                            showToast(t('meeting_not_found')); endCall();
-                        }
+                    
+                    // Allow the Smart Retry Handshake to continue instead of killing call immediately
+                    if (Object.keys(peers).length === 0 && activeRoomId && !ui.lobbyOverlay.classList.contains('flex')) {
+                        showToast(t('meeting_not_found')); 
+                        endCall();
                     }
                 }
             });
