@@ -844,22 +844,7 @@
             const configObj = {
                 'iceServers': [
                     { urls: 'stun:stun.l.google.com:19302' }, 
-                    { urls: 'stun:stun1.l.google.com:19302' },
-                    {
-                        urls: 'turn:openrelay.metered.ca:80',
-                        username: 'openrelayproject',
-                        credential: 'openrelayproject'
-                    },
-                    {
-                        urls: 'turn:openrelay.metered.ca:443',
-                        username: 'openrelayproject',
-                        credential: 'openrelayproject'
-                    },
-                    {
-                        urls: 'turn:openrelay.metered.ca:443?transport=tcp',
-                        username: 'openrelayproject',
-                        credential: 'openrelayproject'
-                    }
+                    { urls: 'stun:global.stun.twilio.com:3478' }
                 ]
             };
             return id ? new Peer(id, { config: configObj }) : new Peer({ config: configObj });
@@ -916,7 +901,9 @@
             peer = initPeer();
             peer.on('open', () => {
                 setupPeerListeners();
-                startJoinHandshake(inputId); 
+                setTimeout(() => {
+                    startJoinHandshake(inputId); 
+                }, 1000);
             });
             handlePeerErrors();
         }
@@ -941,45 +928,58 @@
                 return;
             }
 
+            let retryInterval;
+
             conn.on('open', () => {
                 conn.send({ type: 'join-request', name: localUserName });
+                
+                // Retry mechanism to combat packet loss on mobile
+                let retryCount = 0;
+                retryInterval = setInterval(() => {
+                    retryCount++;
+                    if (retryCount >= 10 || ui.lobbyOverlay.classList.contains('hidden')) {
+                        clearInterval(retryInterval);
+                    } else if (conn.open) {
+                        conn.send({ type: 'join-request', name: localUserName });
+                    }
+                }, 2000);
             });
             
             conn.on('error', (err) => {
                 console.warn("Connection error during handshake:", err);
                 clearTimeout(handshakeTimeout);
+                if (retryInterval) clearInterval(retryInterval);
                 showToast(t('connection_failed'));
                 endCall();
             });
 
             conn.on('data', data => {
                 if (data.type === 'join-response') {
-                    if (data.status === 'approved' || data.status === 'pending' || data.status === 'rejected') {
-                        clearTimeout(handshakeTimeout); // Success, we got a response!
-                    }
+                    clearTimeout(handshakeTimeout); 
+                    if (retryInterval) clearInterval(retryInterval); 
                     
                     if (data.status === 'approved') {
                         meetingSettings = data.settings;
                         applyMeetingSettings();
                         
-                        // Mute on entry logic
                         if (meetingSettings.muteOnEntry) {
                             if (!isMicMuted) toggleMic();
                             showToast(t('muted_by_host_entry'));
                         }
 
-                        // Hide lobby overlay
                         ui.lobbyOverlay.classList.add('hidden');
                         ui.lobbyOverlay.classList.remove('flex');
                         
-                        // Proceed with full Media Call & Data Connection
-                        peers[hostId] = { name: t('meeting_host'), data: conn };
-                        setupDataConnEvents(conn);
-                        
-                        const call = peer.call(hostId, localStream, { metadata: { name: localUserName } });
-                        peers[hostId].call = call;
-                        setupMediaCallEvents(call);
-
+                        // Prevent duplicate media calls if response was duplicated
+                        if (!peers[hostId] || !peers[hostId].call) {
+                            peers[hostId] = peers[hostId] || { name: t('meeting_host') };
+                            peers[hostId].data = conn;
+                            setupDataConnEvents(conn);
+                            
+                            const call = peer.call(hostId, localStream, { metadata: { name: localUserName } });
+                            peers[hostId].call = call;
+                            setupMediaCallEvents(call);
+                        }
                     } else if (data.status === 'pending') {
                         if (data.reason === 'locked') {
                             ui.lobbyTitle.innerText = t('locked_lobby_title');
@@ -1019,6 +1019,12 @@
                     // Host intercepts join request
                     conn.on('data', data => {
                         if (data.type === 'join-request') {
+                            // If already approved (handling retries from guest)
+                            if (peers[conn.peer] && peers[conn.peer].data) {
+                                conn.send({ type: 'join-response', status: 'approved', settings: meetingSettings });
+                                return;
+                            }
+
                             if (meetingSettings.locked) {
                                 waitingQueue[conn.peer] = { name: data.name, conn: conn };
                                 conn.send({ type: 'join-response', status: 'pending', reason: 'locked' });
@@ -1711,18 +1717,20 @@
             const conn = existingConn || (user ? user.conn : null);
             if (conn) {
                 conn.send({ type: 'join-response', status: 'approved', settings: meetingSettings });
-                peers[peerId] = { name: name, data: conn };
-                setupDataConnEvents(conn);
                 
-                // Send mesh list to newly approved user
-                const existingPeers = Object.keys(peers).filter(p => p !== peerId);
-                if (existingPeers.length > 0) conn.send({ type: 'peer-list', list: existingPeers });
+                if (!peers[peerId] || !peers[peerId].data) {
+                    peers[peerId] = { name: name, data: conn };
+                    setupDataConnEvents(conn);
+                    
+                    const existingPeers = Object.keys(peers).filter(p => p !== peerId);
+                    if (existingPeers.length > 0) conn.send({ type: 'peer-list', list: existingPeers });
+                }
             }
             if (waitingQueue[peerId]) {
                 delete waitingQueue[peerId];
                 renderWaitingRoom();
-                updateParticipantsList();
             }
+            updateParticipantsList(); // Always update list incase it was a direct admit
         }
 
         function denyGuest(peerId) {
