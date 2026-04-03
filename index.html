@@ -845,8 +845,21 @@
                 'iceServers': [
                     { urls: 'stun:stun.l.google.com:19302' }, 
                     { urls: 'stun:stun1.l.google.com:19302' },
-                    { urls: 'stun:stun2.l.google.com:19302' },
-                    { urls: 'stun:stun3.l.google.com:19302' }
+                    {
+                        urls: 'turn:openrelay.metered.ca:80',
+                        username: 'openrelayproject',
+                        credential: 'openrelayproject'
+                    },
+                    {
+                        urls: 'turn:openrelay.metered.ca:443',
+                        username: 'openrelayproject',
+                        credential: 'openrelayproject'
+                    },
+                    {
+                        urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+                        username: 'openrelayproject',
+                        credential: 'openrelayproject'
+                    }
                 ]
             };
             return id ? new Peer(id, { config: configObj }) : new Peer({ config: configObj });
@@ -916,13 +929,27 @@
             let handshakeTimeout = setTimeout(() => {
                 showToast(t('connection_failed'));
                 endCall();
-            }, 15000); // 15 seconds timeout
+            }, 25000); // 25 seconds timeout for mobile networks
             
-            // Connect specifying this is an initial join request (removed reliable:true to fix mobile stalling)
+            // Connect specifying this is an initial join request
             const conn = peer.connect(hostId, { metadata: { name: localUserName, type: 'join-request' } });
             
+            if (!conn) {
+                clearTimeout(handshakeTimeout);
+                showToast(t('connection_failed'));
+                endCall();
+                return;
+            }
+
             conn.on('open', () => {
                 conn.send({ type: 'join-request', name: localUserName });
+            });
+            
+            conn.on('error', (err) => {
+                console.warn("Connection error during handshake:", err);
+                clearTimeout(handshakeTimeout);
+                showToast(t('connection_failed'));
+                endCall();
             });
 
             conn.on('data', data => {
