@@ -234,10 +234,11 @@
                     </div>
                 </div>
                 
+                <!-- Short Link Pill -->
                 <div id="room-info" class="hidden items-center glass-panel-dark pl-2.5 pr-1 py-1 sm:pl-3 sm:pr-1.5 sm:py-1.5 rounded-lg sm:rounded-xl shadow-lg group transition-all duration-300 pointer-events-auto hover:bg-gray-800/90 border border-white/10 max-w-[45%] sm:max-w-xs cursor-pointer" onclick="copyRoomLink()">
                     <div class="flex items-center gap-1.5 sm:gap-2 overflow-hidden w-full">
                         <i class="fas fa-link text-indigo-400 text-[9px] sm:text-[11px]"></i>
-                        <span id="display-room-id" class="text-slate-200 font-bold text-[9px] sm:text-[11px] tracking-wider truncate w-full text-left">...</span>
+                        <span id="display-room-id" class="text-slate-200 font-bold text-[9px] sm:text-[11px] tracking-widest truncate w-full text-left">...</span>
                     </div>
                     <div class="w-5 h-5 sm:w-6 sm:h-6 shrink-0 flex items-center justify-center bg-white/5 group-hover:bg-indigo-500 rounded text-slate-300 group-hover:text-white transition-all duration-300 ml-2">
                         <i class="fas fa-copy text-[8px] sm:text-[10px]"></i>
@@ -258,7 +259,7 @@
                     <div class="bg-black/50 rounded-xl p-2 sm:p-2.5 border border-white/5 cursor-pointer hover:border-indigo-500/50 hover:bg-indigo-500/10 transition-all flex items-center justify-between group/copy" onclick="copyRoomLink()">
                         <div class="flex items-center gap-2 sm:gap-3 overflow-hidden pl-2">
                             <i class="fas fa-link text-indigo-400 text-[10px] sm:text-sm"></i>
-                            <span id="waiting-room-id" class="text-slate-200 text-[10px] sm:text-sm truncate font-medium"></span>
+                            <span id="waiting-room-id" class="text-slate-200 text-[10px] sm:text-sm tracking-widest truncate font-medium"></span>
                         </div>
                         <div class="bg-white/10 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg text-[9px] sm:text-xs font-bold text-white group-hover/copy:bg-indigo-500 transition-colors shrink-0">Copy</div>
                     </div>
@@ -723,6 +724,17 @@
             } catch (e) {}
         }
 
+        // Feature: Generate short meeting code instead of UUID
+        function generateMeetCode() {
+            const chars = 'abcdefghijklmnopqrstuvwxyz';
+            const randomStr = (len) => {
+                let res = '';
+                for (let i = 0; i < len; i++) res += chars.charAt(Math.floor(Math.random() * chars.length));
+                return res;
+            };
+            return `${randomStr(3)}-${randomStr(4)}-${randomStr(3)}`;
+        }
+
         function createDummyStream() {
             const stream = new MediaStream();
             try {
@@ -737,28 +749,12 @@
                     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
                     ctx.fillText(typeof t === 'function' ? t('camera_off') : 'Camera Off', 0, 0);
                     ctx.restore();
-                }, 100); 
+                }, 500); 
                 
                 if (canvas.captureStream) {
                     const videoStream = canvas.captureStream(10);
                     const vTracks = videoStream.getVideoTracks();
                     if (vTracks.length > 0) stream.addTrack(vTracks[0]);
-                }
-                
-                const AudioContext = window.AudioContext || window.webkitAudioContext;
-                if (AudioContext) {
-                    try {
-                        const audioCtx = new AudioContext();
-                        const destination = audioCtx.createMediaStreamDestination();
-                        const aTracks = destination.stream.getAudioTracks();
-                        if (aTracks.length > 0) {
-                            const track = aTracks[0];
-                            track.enabled = false;
-                            stream.addTrack(track);
-                        }
-                    } catch(audioErr) {
-                        console.warn("Could not create dummy audio track:", audioErr.message);
-                    }
                 }
             } catch (e) {
                 console.warn("Dummy stream creation failed:", e.message);
@@ -834,18 +830,17 @@
             updateClock();
         });
 
-        function initPeer() {
-            return new Peer({ 
-                config: {
-                    'iceServers': [
-                        { urls: 'stun:stun.l.google.com:19302' }, 
-                        { urls: 'stun:stun1.l.google.com:19302' },
-                        { urls: 'stun:openrelay.metered.ca:80' },
-                        { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
-                        { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' }
-                    ]
-                } 
-            });
+        function initPeer(id = null) {
+            const configObj = {
+                'iceServers': [
+                    { urls: 'stun:stun.l.google.com:19302' }, 
+                    { urls: 'stun:stun1.l.google.com:19302' },
+                    { urls: 'stun:openrelay.metered.ca:80' },
+                    { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+                    { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' }
+                ]
+            };
+            return id ? new Peer(id, { config: configObj }) : new Peer({ config: configObj });
         }
 
         // --- Host: Create Room ---
@@ -857,11 +852,15 @@
             
             switchScreen('call');
             showToast(t('generating_link'));
-            peer = initPeer();
+            
+            const shortId = generateMeetCode(); // Use a short format like abc-defg-hij
+            peer = initPeer(shortId);
+            
             peer.on('open', (id) => {
                 activeRoomId = id; 
                 const link = getRoomLink(id);
-                ui.displayRoomId.innerText = link; ui.waitingRoomId.innerText = link;
+                ui.displayRoomId.innerText = id; // Show only the short code visually
+                ui.waitingRoomId.innerText = id;
                 ui.roomInfo.classList.remove('hidden'); ui.roomInfo.classList.add('flex');
                 ui.waitingMessage.classList.remove('hidden');
                 updateParticipantsList(); 
@@ -878,7 +877,11 @@
             if (!localStream) return showToast(t('allow_cam_mic'));
 
             localUserName = ui.userNameInput.value.trim() || t('guest');
-            if (inputId.includes('?room=')) inputId = inputId.split('?room=')[1].split('&')[0];
+            if (inputId.includes('?room=')) {
+                inputId = new URLSearchParams(inputId.substring(inputId.indexOf('?'))).get('room');
+            }
+            inputId = inputId.toLowerCase().replace(/[^a-z0-9-]/g, '');
+            
             activeRoomId = inputId;
             isHost = false;
             ui.btnHostWrap.classList.add('hidden');
@@ -1806,9 +1809,25 @@
         function copyRoomLink() {
             const link = activeRoomId ? getRoomLink(activeRoomId) : document.getElementById('waiting-room-id').innerText;
             if (!link) return;
-            const tempInput = document.createElement("input"); tempInput.value = link; document.body.appendChild(tempInput); tempInput.select();
-            try { document.execCommand("copy"); showToast(t('link_copied')); } catch (err) { showToast(t('link_copy_failed')); }
-            document.body.removeChild(tempInput);
+            
+            // Replaced generic input with a more reliable textarea for cross-device copy
+            const textArea = document.createElement("textarea");
+            textArea.value = link; 
+            textArea.style.top = "0";
+            textArea.style.left = "0";
+            textArea.style.position = "fixed"; // Prevents scrolling to bottom
+            
+            document.body.appendChild(textArea); 
+            textArea.focus();
+            textArea.select();
+            
+            try { 
+                document.execCommand("copy"); 
+                showToast(t('link_copied')); 
+            } catch (err) { 
+                showToast(t('link_copy_failed')); 
+            }
+            document.body.removeChild(textArea);
         }
 
         let toastTimeout;
