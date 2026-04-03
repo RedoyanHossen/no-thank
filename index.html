@@ -558,7 +558,8 @@
                 muted_by_host_entry: "You were muted upon entry by the host.",
                 meeting_ended_by_host: "Host has ended the meeting for everyone.",
                 locked_lobby_title: "Meeting Locked",
-                locked_lobby_desc: "Host is reviewing your request to join."
+                locked_lobby_desc: "Host is reviewing your request to join.",
+                connection_failed: "Connection timeout. Network blocked or Host offline."
             },
             bn: {
                 main_heading: "প্রিমিয়াম ভিডিও মিটিং।<br><span class=\"text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600\">এখন সবার জন্য ফ্রি।</span>",
@@ -622,7 +623,8 @@
                 muted_by_host_entry: "হোস্টের সেটিং অনুযায়ী আপনি মিউট অবস্থায় জয়েন করেছেন।",
                 meeting_ended_by_host: "হোস্ট সবার জন্য মিটিংটি শেষ করে দিয়েছেন।",
                 locked_lobby_title: "মিটিং লক করা আছে",
-                locked_lobby_desc: "হোস্ট আপনার রিকুয়েস্ট দেখছেন।"
+                locked_lobby_desc: "হোস্ট আপনার রিকুয়েস্ট দেখছেন।",
+                connection_failed: "সংযুক্ত হতে ব্যর্থ। হোস্ট হয়তো অফলাইনে আছেন বা নেটওয়ার্ক ব্লক করা।"
             }
         };
         
@@ -833,7 +835,17 @@
         });
 
         function initPeer() {
-            return new Peer({ config: {'iceServers': [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }]} });
+            return new Peer({ 
+                config: {
+                    'iceServers': [
+                        { urls: 'stun:stun.l.google.com:19302' }, 
+                        { urls: 'stun:stun1.l.google.com:19302' },
+                        { urls: 'stun:openrelay.metered.ca:80' },
+                        { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+                        { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' }
+                    ]
+                } 
+            });
         }
 
         // --- Host: Create Room ---
@@ -887,8 +899,13 @@
             ui.lobbyOverlay.classList.remove('hidden');
             ui.lobbyOverlay.classList.add('flex');
             
+            let handshakeTimeout = setTimeout(() => {
+                showToast(t('connection_failed'));
+                endCall();
+            }, 15000); // 15 seconds timeout
+            
             // Connect specifying this is an initial join request
-            const conn = peer.connect(hostId, { metadata: { name: localUserName, type: 'join-request' } });
+            const conn = peer.connect(hostId, { metadata: { name: localUserName, type: 'join-request' }, reliable: true });
             
             conn.on('open', () => {
                 conn.send({ type: 'join-request', name: localUserName });
@@ -896,6 +913,10 @@
 
             conn.on('data', data => {
                 if (data.type === 'join-response') {
+                    if (data.status === 'approved' || data.status === 'pending' || data.status === 'rejected') {
+                        clearTimeout(handshakeTimeout); // Success, we got a response!
+                    }
+                    
                     if (data.status === 'approved') {
                         meetingSettings = data.settings;
                         applyMeetingSettings();
